@@ -234,8 +234,8 @@ class RNRSAKeychain: NSObject {
     @objc
     func deletePrivateKey(_ keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
         let rsa_ec = RSAECNative(keyTag: keyTag)
-        rsa_ec.deletePrivateKey()
-        resolve(true)
+        let result = rsa_ec.deletePrivateKey()
+        resolve(result)
     }
     
     
@@ -267,5 +267,129 @@ class RNRSAKeychain: NSObject {
         resolve(msg)
     }
     
+    @objc
+    func getAllKeys(_ resolver: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecReturnAttributes as String: true,
+            kSecReturnRef as String: true,
+            kSecMatchLimit as String: kSecMatchLimitAll
+        ]
+
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        var keysInfo: [[String: Any]] = []
+
+        if status == errSecSuccess,
+           let items = result as? [[String: Any]] {
+            for item in items {
+                let keyTypeNumber = item[kSecAttrKeyType as String] as? NSNumber
+                let keyTypeInt = keyTypeNumber?.intValue ?? 0
+                let keyTypeString: String
+                switch keyTypeInt {
+                case 42: // kSecAttrKeyTypeRSA
+                    keyTypeString = "RSA"
+                case 73: // kSecAttrKeyTypeECSECPrimeRandom
+                    keyTypeString = "EC"
+                case 77: // kSecAttrKeyTypeEd25519
+                    keyTypeString = "Ed25519"
+                default:
+                    keyTypeString = "Type \(keyTypeInt)"
+                }
+                let keyClassNumber = item[kSecAttrKeyClass as String] as? NSNumber
+                let keyClassString: String
+                let keyPublicKey: String
+                if let keyClass = keyClassNumber {
+                    switch keyClass.intValue {
+                    case 0: // kSecAttrKeyClassPublic
+                        keyClassString = "Public"
+                    case 1: // kSecAttrKeyClassPrivate
+                        keyClassString = "Private"
+                    case 2: // kSecAttrKeyClassSymmetric
+                        keyClassString = "Symmetric"
+                    default:
+                        keyClassString = "Unknown (\(keyClass.intValue))"
+                    }
+                    if let keyRef = item[kSecValueRef as String] {
+                      var publicKeyData: Data?
+
+                      switch keyClass.intValue {
+                      case 0:
+                          if let secKey = keyRef as! SecKey? {
+                              var error: Unmanaged<CFError>?
+                              if let keyData = SecKeyCopyExternalRepresentation(secKey, &error) {
+                                  publicKeyData = keyData as Data
+                              }
+                          }
+                        break
+                      case 1:
+                          if let privateKey = keyRef as! SecKey? {
+                              if let publicKey = SecKeyCopyPublicKey(privateKey) {
+                                  var error: Unmanaged<CFError>?
+                                  if let keyData = SecKeyCopyExternalRepresentation(publicKey, &error) {
+                                      publicKeyData = keyData as Data
+                                  }
+                              }
+                          }
+                        break
+                      default:
+                        break
+                      }
+
+                      if let data = publicKeyData {
+                          keyPublicKey = data.base64EncodedString()
+                      } else {
+                          keyPublicKey = ""
+                      }
+                  } else {
+                      keyPublicKey = ""
+                  }
+                } else {
+                    keyClassString = "Unknown"
+                    keyPublicKey = ""
+                }
+
+                let keyAppTag: String
+                if let appTag = item[kSecAttrApplicationTag as String] as? Data {
+                    if let tagString = String(data: appTag, encoding: .utf8) {
+                        keyAppTag = tagString
+                    } else {
+                        // Fallback for binary data - use hex representation
+                        keyAppTag = appTag.map { String(format: "%02x", $0) }.joined()
+                    }
+                } else {
+                    keyAppTag = ""
+                }
+
+
+                let info: [String: Any] = [
+                    "class": keyClassString,
+                    "type": keyTypeString,
+                    "size": item[kSecAttrKeySizeInBits as String] as? Int ?? 0,
+                    "tag": keyAppTag,
+                    "public": keyPublicKey,
+                ];
+                keysInfo.append(info);
+            }
+
+        } else if (status == errSecItemNotFound) {
+            resolver(keysInfo)
+            return
+        }
+        guard status == errSecSuccess else {
+            reject("SEC_KEY_ENUM_ERROR", "Failed to enumerate keys: \(status)", nil)
+            return
+        }
+        resolver(keysInfo)
+    }
+
+    @objc
+    func deleteAllKeys(_ resolver: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey
+        ]
+        let status = SecItemDelete(query as CFDictionary)
+        resolver(status == errSecSuccess)
+    }
 }
 

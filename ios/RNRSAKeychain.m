@@ -50,6 +50,10 @@ RCT_EXTERN_METHOD(encrypt64:(NSString *)message keyTag:(NSString *)keyTag resolv
 
 RCT_EXTERN_METHOD(decrypt64:(NSString *)message keyTag:(NSString *)keyTag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(getAllKeys:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(deleteAllKeys:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+
 @end
 
 
