@@ -42,11 +42,10 @@ class RSAECNative: NSObject {
         
         if((self.keyTag) != nil){
             privateKeyParameters[String(kSecAttrIsPermanent)] = kCFBooleanTrue
-            privateKeyParameters[String(kSecAttrApplicationTag)] = self.privateKeyTag as AnyObject
+            privateKeyParameters[String(kSecAttrApplicationTag)] = self.privateKeyTag!.data(using: .utf8) as AnyObject
             
             publicKeyParameters[String(kSecAttrIsPermanent)] = kCFBooleanTrue
-            publicKeyParameters[String(kSecAttrApplicationTag)] = self.publicKeyTag as AnyObject
-            
+            publicKeyParameters[String(kSecAttrApplicationTag)] = self.publicKeyTag!.data(using: .utf8) as AnyObject
         }
         
         #if !arch(i386) && !arch(x86_64)
@@ -119,13 +118,10 @@ class RSAECNative: NSObject {
         }
         return true
     }
-    
     public func generateEC() -> Bool? {
         self.keyAlgorithm = KeyAlgorithm.ec(signatureType: .sha256)
-        // ios support 256
         return self.generate(keySize: 256);
     }
-    
     public func generateCSR(CN: String?, withAlgorithm: String) -> String? {
         self.setAlgorithm(algorithm: withAlgorithm)
         //        self.privateKey = self.getPrivateKeyChain(tag: self.privateKeyTag!)
@@ -148,7 +144,7 @@ class RSAECNative: NSObject {
         //Ask keychain to provide the publicKey in bits
         var query: [String: AnyObject] = [
             String(kSecClass): kSecClassKey,
-            String(kSecAttrApplicationTag): self.publicKeyTag as AnyObject,
+            String(kSecAttrApplicationTag): self.publicKeyTag!.data(using: .utf8) as AnyObject,
             String(kSecReturnData): kCFBooleanTrue
         ]
         
@@ -197,11 +193,11 @@ class RSAECNative: NSObject {
     }
     
     
-    public func deletePrivateKey(){
+    public func deletePrivateKey() -> Bool {
         var query: [String: AnyObject] = [
             String(kSecClass)             : kSecClassKey,
-            String(kSecAttrApplicationTag): self.privateKeyTag as AnyObject,
-            String(kSecReturnRef)         : true as AnyObject
+            String(kSecAttrApplicationTag): self.privateKeyTag!.data(using: .utf8) as AnyObject,
+            String(kSecReturnRef)         : true as AnyObject,
         ]
         
         if #available(iOS 10, *) {
@@ -216,6 +212,7 @@ class RSAECNative: NSObject {
             print("Error delete private key: \(result)")
             //            return nil
         }
+        return result == errSecSuccess
     }
     
     public func encodedPublicKeyRSA() -> String? {

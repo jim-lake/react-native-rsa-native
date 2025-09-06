@@ -138,33 +138,59 @@ const androidDemo = async () => {
 }
 
 const keychainDemo = async () => {
+  try {
+    console.log("keychainDemo start");
 
-  const keys = await RSAKeychain.generate(keyTag)
-  console.log(keys.public);
-  console.log(secret);
+    const RSA_TAG = 'rsa_tag3';
+    const EC_TAG = 'ec_tag3';
 
-  const encodedMessage = await RSAKeychain.encrypt(secret, keyTag)
-  console.log(encodedMessage);
-  const message = await RSAKeychain.decrypt(encodedMessage, keyTag)
-  console.log(message);
-  const signature = await RSAKeychain.sign(secret, keyTag)
-  console.log('signature', signature);
-  const valid = await RSAKeychain.verify(signature, secret, keyTag)
-  console.log('verified', valid);
-  const publicKey = await RSAKeychain.getPublicKey(keyTag)
-  console.log('getPublicKey', publicKey)
-  const success = await RSAKeychain.deletePrivateKey(keyTag)
-  console.log('delete success', success)
+    const list0 = await RSAKeychain.getAllKeys();
+    console.log('pre-pre-list:', list0);
+
+    const delete_all_result = await RSAKeychain.deleteAllKeys();
+    console.log("delete_all_result:", delete_all_result);
+    const keys = await RSAKeychain.generate(RSA_TAG)
+    console.log(keys.public);
+    const ec_keys = await RSAKeychain.generateEC(EC_TAG);
+    console.log("ec_keys:", ec_keys);
+
+    const list2 = await RSAKeychain.getAllKeys();
+    console.log('list2:', list2);
+
+    const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG)
+    console.log(encodedMessage);
+    const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG)
+    console.log(message);
+    const signature = await RSAKeychain.sign(secret, RSA_TAG)
+    console.log('signature', signature);
+    const valid = await RSAKeychain.verify(signature, secret, RSA_TAG)
+    console.log('verified', valid);
+    const publicKey = await RSAKeychain.getPublicKey(RSA_TAG)
+    console.log('getPublicKey', publicKey)
+
+
+    const success = await RSAKeychain.deletePrivateKey(RSA_TAG);
+    console.log('delete success', success);
+
+    const success_ec = await RSAKeychain.deletePrivateKey(EC_TAG);
+    console.log('delete_ec success', success_ec);
+
+    const list3 = await RSAKeychain.getAllKeys();
+    console.log('list3:', list3);
+  } catch (e) {
+    console.log("threw:", e);
+  }
 }
 
 const runDemos = async () => {
+  await keychainDemo()
+  return;
   await generateKeys4096Demo()
   await generateDemo()
   await signDemo()
   await signAlgoDemo()
   await iosDemo()
   await androidDemo()
-  await keychainDemo()
 }
 
 runDemos().then()

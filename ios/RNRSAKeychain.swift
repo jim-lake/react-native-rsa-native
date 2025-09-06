@@ -360,14 +360,29 @@ class RNRSAKeychain: NSObject {
                 } else {
                     keyAppTag = ""
                 }
-
+                let keyLabel: String
+                if let labelData = item[kSecAttrLabel as String] as? Data {
+                    keyLabel = String(data: labelData, encoding: .utf8) ?? "Unknown"
+                } else {
+                    keyLabel = ""
+                }
+                let keyAccessControl: String
+                if let accessControl = item[kSecAttrAccessControl as String] {
+                    keyAccessControl = String(describing: accessControl)
+                } else {
+                    keyAccessControl = ""
+                }
 
                 let info: [String: Any] = [
                     "class": keyClassString,
                     "type": keyTypeString,
                     "size": item[kSecAttrKeySizeInBits as String] as? Int ?? 0,
-                    "tag": keyAppTag,
                     "public": keyPublicKey,
+                    "extractable": (item[kSecAttrIsExtractable as String] as? NSNumber)?.boolValue ?? false,
+                    "tag": keyAppTag,
+                    "label": keyLabel,
+                    "syncronizable": (item[kSecAttrSynchronizable as String] as? NSNumber)?.boolValue ?? false,
+                    "accessControl": keyAccessControl,
                 ];
                 keysInfo.append(info);
             }
