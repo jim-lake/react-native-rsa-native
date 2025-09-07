@@ -2,9 +2,11 @@
   "name": "react-native-rsa-native",
   "version": "2.0.5",
   "description": "A native implementation of RSA key generation and encryption/decryption.",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -25,5 +27,14 @@
   "homepage": "https://github.com/amitaymolko/react-native-rsa-native#readme",
   "peerDependencies": {
     "react-native": "*"
+  },
+  "files": [
+    "dist",
+    "android",
+    "ios",
+    "react-native-rsa-native.podspec"
+  ],
+  "devDependencies": {
+    "typescript": "^5.9.2"
   }
 }
