@@ -486,8 +486,8 @@ class RSAECNative: NSObject {
     }
     
     public func verify64(encodedSignature: String, withMessage: String, withAlgorithm: String) -> Bool? {
-        guard let messageBytes =  Data(base64Encoded: encodedSignature, options: .ignoreUnknownCharacters) else { return nil }
-        guard let signatureBytes = Data(base64Encoded: withMessage, options: .ignoreUnknownCharacters) else { return nil }
+        guard let signatureBytes =  Data(base64Encoded: encodedSignature, options: .ignoreUnknownCharacters) else { return nil }
+        guard let messageBytes = Data(base64Encoded: withMessage, options: .ignoreUnknownCharacters) else { return nil }
         return self._verify(signatureBytes: signatureBytes, withMessage: messageBytes, withAlgorithm: withAlgorithm)
     }
     

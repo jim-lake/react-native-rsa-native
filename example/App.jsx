@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import { View, Text } from 'react-native'
+import React, { Component } from 'react';
+import { View, Text } from 'react-native';
 
 import { RSA, RSAKeychain } from 'react-native-rsa-native';
 
@@ -7,56 +7,74 @@ let secret = 'secret message';
 let keyTag = 'com.domain.mykey';
 
 const generateKeys4096Demo = async () => {
-  console.log('generateKeys4096Demo')
-  const keys = await RSA.generateKeys(4096)
-  console.log('4096 private:', keys.private) // the private key
-  console.log('4096 public:', keys.public) // the public key
-  const encodedMessage = await RSA.encrypt('4096', keys.public)
-  console.log('4096 encoded message:', encodedMessage)
-  const message = await RSA.decrypt(encodedMessage, keys.private)
+  console.log('generateKeys4096Demo');
+  const keys = await RSA.generateKeys(4096);
+  console.log('4096 private:', keys.private); // the private key
+  console.log('4096 public:', keys.public); // the public key
+  const encodedMessage = await RSA.encrypt('4096', keys.public);
+  console.log('4096 encoded message:', encodedMessage);
+  const message = await RSA.decrypt(encodedMessage, keys.private);
   console.log('4096 decoded message:', message);
-}
+};
 
 const generateDemo = async () => {
-  console.log('generateDemo')
-  const keys = await RSA.generate()
-  console.log('private:', keys.private) // the private key
-  console.log('public:', keys.public) // the public key
-  const encodedMessage = await RSA.encrypt('1234', keys.public)
-  console.log('encoded message:', encodedMessage)
-  const message = await RSA.decrypt(encodedMessage, keys.private)
+  console.log('generateDemo');
+  const keys = await RSA.generate();
+  console.log('private:', keys.private); // the private key
+  console.log('public:', keys.public); // the public key
+  const encodedMessage = await RSA.encrypt('1234', keys.public);
+  console.log('encoded message:', encodedMessage);
+  const message = await RSA.decrypt(encodedMessage, keys.private);
   console.log('decoded message:', message);
-}
+};
 
 const signDemo = async () => {
-  console.log('signDemo')
-  const keys = await RSA.generate()
-  const signature = await RSA.sign(secret, keys.private)
+  console.log('signDemo');
+  const keys = await RSA.generate();
+  const signature = await RSA.sign(secret, keys.private);
   console.log('signature', signature);
-  const valid = await RSA.verify(signature, secret, keys.public)
-  console.log('verified', valid);
   try {
-    await RSA.verify(signature, "wrong message", keys.public)
-    console.log("NOTE!! Something went wrong, verify should have been failed")
+    const valid = await RSA.verify(signature, secret, keys.public);
+    console.log('verified', valid);
+  } catch (err) {
+    console.log('verify threw:', err);
+  }
+  try {
+    await RSA.verify(signature, 'wrong message', keys.public);
+    console.log('NOTE!! Something went wrong, verify should have been failed');
   } catch (err) {
     console.log('verify fails correctly: ', err);
   }
-}
+};
 
 const signAlgoDemo = async () => {
-  console.log('signAlgoDemo')
-  const keys = await RSA.generate()
-  const signature = await RSA.signWithAlgorithm(secret, keys.private, RSA.SHA256withRSA)
+  console.log('signAlgoDemo');
+  const keys = await RSA.generate();
+  const signature = await RSA.signWithAlgorithm(
+    secret,
+    keys.private,
+    RSA.SHA256withRSA,
+  );
   console.log('signature', signature);
-  const valid = await RSA.verifyWithAlgorithm(signature, secret, keys.public, RSA.SHA256withRSA)
+  const valid = await RSA.verifyWithAlgorithm(
+    signature,
+    secret,
+    keys.public,
+    RSA.SHA256withRSA,
+  );
   console.log('verified', valid);
   try {
-    await RSA.verifyWithAlgorithm(signature, "wrong message", keys.public, RSA.SHA256withRSA)
-    console.log("NOTE!! Something went wrong, verify should have been failed")
+    await RSA.verifyWithAlgorithm(
+      signature,
+      'wrong message',
+      keys.public,
+      RSA.SHA256withRSA,
+    );
+    console.log('NOTE!! Something went wrong, verify should have been failed');
   } catch (err) {
     console.log('verify fails correctly: ', err);
   }
-}
+};
 
 const iosDemo = async () => {
   const iosPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
@@ -85,18 +103,18 @@ const iosDemo = async () => {
   duTHg1ECgYB98Z0eCi/ct+m+B3YhCEdcXUzvIZY0sEJUlqIiGyxkLuVEdIPIFUqj
   f1+VVZQA0d6BwruDSptq8x5aR3rdAlb5A71NYWQGOIPa2E5SIFZmzrZjyeeCfyB8
   eMOrE2W6flCRaTDOH4kFuw4JqrymBLcgP/OTYO0T9MCOKeqP0wbyNg==
-  -----END RSA PRIVATE KEY-----`
+  -----END RSA PRIVATE KEY-----`;
 
   const iosEncodedMessage = `xW7YdqRZPxMjUydRuY/bWO78Jvz/GM9qx+0soQEsheqfs+5nLugkBXiJC9J6if3j
   oCH/uBLYC41X6tlpX/L/u+ujaYQTIRcnL1f74ZFcX8Ox1vTp47Ie5XteRcLbuAmk
   vOzQ41q/ddUe8co67ShuiTmwI3Q4bUNukHEkwcpbD20JllKRR3wfYCoej05O29Xj
   9QuO0gKjEis5le6dWrMuVQVT70rBZQkAoBAesSjEYw0LKKjyylpUHmNy7y1XNbb2
   LA8kC70ZvNWYL+cIU2ZKts9HYtTbIAonL91uP6Bf+M0uUkqc2zxEL9EpFmwGx3Q0
-  JQUqPQPB+wHb7DlDFJdQ6A==`
+  JQUqPQPB+wHb7DlDFJdQ6A==`;
 
-  const message = await RSA.decrypt(iosEncodedMessage, iosPkcs1PrivateKey)
+  const message = await RSA.decrypt(iosEncodedMessage, iosPkcs1PrivateKey);
   console.log('ios decoded message:', message);
-}
+};
 
 const androidDemo = async () => {
   const androidPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
@@ -125,21 +143,24 @@ const androidDemo = async () => {
   9hK2zY0CgYBiMwbP0nafeaB+YO9v2mvwHeCAnFtBsVZkUVp75alsAujr/YEKSKEQ
   YiFzbWLAkY7gBrS2b8tbHKXkkYfcWWlpM85ir/uqyNy/6Rb7CPkKUkCInIwZ9Vi2
   clP6STevOnNTlyYhNgesy50tSPJEWO6ysC/petudc5t1e1FEM/pBkg==
-  -----END RSA PRIVATE KEY-----`
+  -----END RSA PRIVATE KEY-----`;
 
   const androidEncodedMessage = `Z3iPkJiJCrXLaT11RtwBuSJa4rGbJ7JfDSHMNn/UaLUnGIzFmMT6ZRMtaSmWJhw3pXBES1IqufJB
   Wk5vdZuDD7o5AP8i5GHrgVGbf6ix6DIH1+PiJzcfwBcSdEuCMEsustk+tBirK/HuxYt0HQV3B8Sw
   EFAFOAPh3y2CsSC7Ibn5Q5cWeDYxfs8XANezs0H3i/X+KZP8owIrKnsERErc0E6bJ/V3tGCoFb+5
   m0SibGo5B446iH57hTHf3Sv6GYcThk5+BqP/08VVQ2YXy+oMPng2nVnvzGONdJzfq+9GAKWMx6CE
-  yiSiGz7AYGDb04FmekL8KqEKy6nTlVERlbwWRg==`
+  yiSiGz7AYGDb04FmekL8KqEKy6nTlVERlbwWRg==`;
 
-  const message = await RSA.decrypt(androidEncodedMessage, androidPkcs1PrivateKey)
+  const message = await RSA.decrypt(
+    androidEncodedMessage,
+    androidPkcs1PrivateKey,
+  );
   console.log('android decoded message:', message);
-}
+};
 
 const keychainDemo = async () => {
   try {
-    console.log("keychainDemo start");
+    console.log('keychainDemo start');
 
     const RSA_TAG = 'rsa_tag3';
     const EC_TAG = 'ec_tag3';
@@ -148,26 +169,26 @@ const keychainDemo = async () => {
     console.log('pre-pre-list:', list0);
 
     const delete_all_result = await RSAKeychain.deleteAllKeys();
-    console.log("delete_all_result:", delete_all_result);
-    const keys = await RSAKeychain.generate(RSA_TAG)
+    console.log('delete_all_result:', delete_all_result);
+    const keys = await RSAKeychain.generate(RSA_TAG);
     console.log(keys.public);
     const ec_keys = await RSAKeychain.generateEC(EC_TAG);
-    console.log("ec_keys:", ec_keys);
+    console.log('ec_keys:', ec_keys);
 
     const list2 = await RSAKeychain.getAllKeys();
     console.log('list2:', list2);
 
-    const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG)
-    console.log(encodedMessage);
-    const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG)
-    console.log(message);
-    const signature = await RSAKeychain.sign(secret, RSA_TAG)
+    console.log('secret:', secret);
+    const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG);
+    console.log('encodedMessage:', encodedMessage);
+    const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG);
+    console.log('message:', message);
+    const signature = await RSAKeychain.sign(secret, RSA_TAG);
     console.log('signature', signature);
-    const valid = await RSAKeychain.verify(signature, secret, RSA_TAG)
+    const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
     console.log('verified', valid);
-    const publicKey = await RSAKeychain.getPublicKey(RSA_TAG)
-    console.log('getPublicKey', publicKey)
-
+    const publicKey = await RSAKeychain.getPublicKey(RSA_TAG);
+    console.log('getPublicKey', publicKey);
 
     const success = await RSAKeychain.deletePrivateKey(RSA_TAG);
     console.log('delete success', success);
@@ -178,33 +199,34 @@ const keychainDemo = async () => {
     const list3 = await RSAKeychain.getAllKeys();
     console.log('list3:', list3);
   } catch (e) {
-    console.log("threw:", e);
+    console.log('threw2:', e);
   }
-}
+};
 
 const runDemos = async () => {
-  await keychainDemo()
-  return;
-  await generateKeys4096Demo()
-  await generateDemo()
-  await signDemo()
-  await signAlgoDemo()
-  await iosDemo()
-  await androidDemo()
-}
+  try {
+    await keychainDemo();
+    //await generateKeys4096Demo()
+    //await generateDemo()
+    //await signDemo()
+    //await signAlgoDemo()
+    //await iosDemo()
+    //await androidDemo()
+  } catch (e) {
+    console.log('threw runDemos:', e);
+  }
+};
 
-runDemos().then()
+runDemos().then();
 
 class App extends Component {
-  render () {
+  render() {
     return (
       <View>
-        <Text>
-          Demo
-        </Text>
+        <Text>Demo</Text>
       </View>
-    )
+    );
   }
 }
 
-export default App
+export default App;

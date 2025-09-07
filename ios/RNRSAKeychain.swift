@@ -116,12 +116,7 @@ class RNRSAKeychain: NSObject {
     }
     
     // MARK: - Key Generation Methods
-    
-    @objc
-    func generate(_ keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        generateKeys(keyTag, keySize: 2048, resolver: resolve, rejecter: reject)
-    }
-    
+
     @objc
     func generateKeys(_ keyTag: String, keySize: Int, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
         let privateKeyParameters: [String: Any] = [
@@ -148,9 +143,7 @@ class RNRSAKeychain: NSObject {
             reject("PUBLIC_KEY_ERROR", "Failed to get public key", nil)
             return
         }
-        
-        let publicKeyDER = Self.formatPublicKeyDER(publicKeyData)
-        resolve(["public": publicKeyDER])
+        resolve(["public": publicKeyData.base64EncodedString()])
     }
     
     @objc
@@ -165,61 +158,24 @@ class RNRSAKeychain: NSObject {
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
             kSecAttrKeySizeInBits as String: 256,
             kSecReturnRef as String: true,
-            kSecPrivateKeyAttrs as String: privateKeyParameters
+            kSecPrivateKeyAttrs as String: privateKeyParameters,
+            kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
         ]
-        
         var error: Unmanaged<CFError>?
         guard let privateKey = SecKeyCreateRandomKey(parameters as CFDictionary, &error) else {
             reject("KEY_GENERATION_ERROR", "Failed to generate EC key pair", nil)
             return
         }
-        
         guard let publicKey = SecKeyCopyPublicKey(privateKey),
               let publicKeyData = Self.getKeyData(key: publicKey) else {
             reject("PUBLIC_KEY_ERROR", "Failed to get public key", nil)
             return
         }
-        
-        let publicKeyPEM = Self.formatPEM(publicKeyData, tag: "PUBLIC")
-        resolve(["public": publicKeyPEM])
+        resolve(["public": publicKeyData.base64EncodedString()])
     }
     
     // MARK: - Signing Methods
-    
-    @objc
-    func sign(_ message: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        signWithAlgorithm(message, keyTag: keyTag, withAlgorithm: "SHA512withRSA", resolver: resolve, rejecter: reject)
-    }
-    
-    @objc
-    func signWithAlgorithm(_ message: String, keyTag: String, withAlgorithm: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        guard let privateKey = Self.getPrivateKey(keyTag: keyTag) else {
-            reject("PRIVATE_KEY_NOT_FOUND", "Private key not found for tag: \(keyTag)", nil)
-            return
-        }
         
-        guard let messageData = message.data(using: .utf8) else {
-            reject("MESSAGE_ENCODING_ERROR", "Failed to encode message", nil)
-            return
-        }
-        
-        let algorithm = Self.getSignatureAlgorithm(withAlgorithm)
-        var error: Unmanaged<CFError>?
-        
-        guard let signature = SecKeyCreateSignature(privateKey, algorithm, messageData as CFData, &error) else {
-            reject("SIGNING_ERROR", "Failed to sign message", nil)
-            return
-        }
-        
-        let signatureString = (signature as Data).base64EncodedString()
-        resolve(signatureString)
-    }
-    
-    @objc
-    func sign64(_ message: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        sign64WithAlgorithm(message, keyTag: keyTag, withAlgorithm: "SHA512withRSA", resolver: resolve, rejecter: reject)
-    }
-    
     @objc
     func sign64WithAlgorithm(_ message: String, keyTag: String, withAlgorithm: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
         guard let privateKey = Self.getPrivateKey(keyTag: keyTag) else {
@@ -246,41 +202,6 @@ class RNRSAKeychain: NSObject {
     
     // MARK: - Verification Methods
     
-    @objc
-    func verify(_ signature: String, withMessage: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        verifyWithAlgorithm(signature, withMessage: withMessage, keyTag: keyTag, withAlgorithm: "SHA512withRSA", resolver: resolve, rejecter: reject)
-    }
-    
-    @objc
-    func verifyWithAlgorithm(_ signature: String, withMessage: String, keyTag: String, withAlgorithm: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        guard let privateKey = Self.getPrivateKey(keyTag: keyTag),
-              let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            reject("KEY_NOT_FOUND", "Key not found for tag: \(keyTag)", nil)
-            return
-        }
-        
-        guard let messageData = withMessage.data(using: .utf8),
-              let signatureData = Data(base64Encoded: signature) else {
-            reject("DATA_ENCODING_ERROR", "Failed to encode data", nil)
-            return
-        }
-        
-        let algorithm = Self.getSignatureAlgorithm(withAlgorithm)
-        var error: Unmanaged<CFError>?
-        
-        let isValid = SecKeyVerifySignature(publicKey, algorithm, messageData as CFData, signatureData as CFData, &error)
-        
-        if isValid {
-            resolve(true)
-        } else {
-            reject("VERIFICATION_FAILED", "Signature verification failed", nil)
-        }
-    }
-    
-    @objc
-    func verify64(_ signature: String, withMessage: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        verify64WithAlgorithm(signature, withMessage: withMessage, keyTag: keyTag, withAlgorithm: "SHA512withRSA", resolver: resolve, rejecter: reject)
-    }
     
     @objc
     func verify64WithAlgorithm(_ signature: String, withMessage: String, keyTag: String, withAlgorithm: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
@@ -304,60 +225,11 @@ class RNRSAKeychain: NSObject {
         if isValid {
             resolve(true)
         } else {
-            reject("VERIFICATION_FAILED", "Signature verification failed", nil)
+            resolve(false)
         }
     }
     
     // MARK: - Encryption/Decryption Methods
-    
-    @objc
-    func encrypt(_ message: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        guard let privateKey = Self.getPrivateKey(keyTag: keyTag),
-              let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            reject("KEY_NOT_FOUND", "Key not found for tag: \(keyTag)", nil)
-            return
-        }
-        
-        guard let messageData = message.data(using: .utf8) else {
-            reject("MESSAGE_ENCODING_ERROR", "Failed to encode message", nil)
-            return
-        }
-        
-        var error: Unmanaged<CFError>?
-        guard let encryptedData = SecKeyCreateEncryptedData(publicKey, .rsaEncryptionPKCS1, messageData as CFData, &error) else {
-            reject("ENCRYPTION_ERROR", "Failed to encrypt message", nil)
-            return
-        }
-        
-        let encryptedString = (encryptedData as Data).base64EncodedString()
-        resolve(encryptedString)
-    }
-    
-    @objc
-    func decrypt(_ message: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-        guard let privateKey = Self.getPrivateKey(keyTag: keyTag) else {
-            reject("PRIVATE_KEY_NOT_FOUND", "Private key not found for tag: \(keyTag)", nil)
-            return
-        }
-        
-        guard let encryptedData = Data(base64Encoded: message) else {
-            reject("MESSAGE_DECODING_ERROR", "Failed to decode encrypted message", nil)
-            return
-        }
-        
-        var error: Unmanaged<CFError>?
-        guard let decryptedData = SecKeyCreateDecryptedData(privateKey, .rsaEncryptionPKCS1, encryptedData as CFData, &error) else {
-            reject("DECRYPTION_ERROR", "Failed to decrypt message", nil)
-            return
-        }
-        
-        guard let decryptedString = String(data: decryptedData as Data, encoding: .utf8) else {
-            reject("STRING_ENCODING_ERROR", "Failed to encode decrypted data as string", nil)
-            return
-        }
-        
-        resolve(decryptedString)
-    }
     
     @objc
     func encrypt64(_ message: String, keyTag: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
@@ -452,7 +324,6 @@ class RNRSAKeychain: NSObject {
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA
         ]
         
         let status = SecItemDelete(query as CFDictionary)
