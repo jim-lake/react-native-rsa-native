@@ -35,6 +35,7 @@ export declare const RSAKeychain: {
     generate: (keyTag: string) => Promise<PublicKey>;
     generateKeys: (keyTag: string, keySize: number) => Promise<PublicKey>;
     generateEC: (keyTag: string) => Promise<PublicKey>;
+    generateEd: (keyTag: string) => Promise<PublicKey>;
     generateCSR: (keyTag: string, CN: string, signature?: TypeCrypto) => Promise<CSRKey>;
     generateCSRWithEC: (cn: string, keyTag: string, keySize: number) => Promise<PublicKey & CSRKey>;
     deletePrivateKey: (keyTag: string) => Promise<boolean>;
@@ -46,11 +47,14 @@ export declare const RSAKeychain: {
     signWithAlgorithm: (data: string, keyTag: string, signature?: TypeCrypto) => Promise<string>;
     sign64: (data: string, keyTag: string) => Promise<string>;
     sign64WithAlgorithm: (data: string, keyTag: string, signature?: TypeCrypto) => Promise<string>;
+    signEd: (message: string | Uint8Array, keyTag: string) => Promise<Uint8Array>;
+    verifyEd: (signature: string | Uint8Array, message: string | Uint8Array, publicKey: string | Uint8Array) => Promise<boolean>;
     verify: (signature: string, data: string, keyTag: string) => Promise<boolean>;
     verifyWithAlgorithm: (signature: string, data: string, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
     verify64: (signature: string, data: string, keyTag: string) => Promise<boolean>;
     verify64WithAlgorithm: (signature: string, data: string, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
     getPublicKey: (keyTag: string) => Promise<PublicKey>;
+    getPublicKeyEd: (keyTag: string) => Promise<PublicKey>;
     getPublicKeyDER: (keyTag: string) => Promise<PublicKey>;
     getPublicKeyRSA: (keyTag: string) => Promise<PublicKey>;
     getAllKeys: () => Promise<any[]>;

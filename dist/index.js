@@ -39,6 +39,7 @@ exports.RSAKeychain = {
     generate: (keyTag) => RNRSAKeychain.generateKeys(keyTag, 2048),
     generateKeys: (keyTag, keySize) => RNRSAKeychain.generateKeys(keyTag, keySize),
     generateEC: (keyTag) => RNRSAKeychain.generateEC(keyTag),
+    generateEd: (keyTag) => RNRSAKeychain.generateEd(keyTag),
     generateCSR: (keyTag, CN, signature) => RNRSAKeychain.generateCSR(keyTag, CN, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA'),
     generateCSRWithEC: (cn, keyTag, keySize) => RNRSAKeychain.generateCSRWithEC(cn, keyTag, keySize),
     deletePrivateKey: (keyTag) => RNRSAKeychain.deletePrivateKey(keyTag),
@@ -58,11 +59,19 @@ exports.RSAKeychain = {
     },
     sign64: (data, keyTag) => RNRSAKeychain.sign64WithAlgorithm(data, keyTag),
     sign64WithAlgorithm: (data, keyTag, signature) => RNRSAKeychain.sign64WithAlgorithm(data, keyTag, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA'),
+    signEd: async (message, keyTag) => {
+        const signature = await RNRSAKeychain.signEd(_toBase64(message), keyTag);
+        return _fromBase64(signature);
+    },
+    verifyEd: async (signature, message, publicKey) => {
+        return await RNRSAKeychain.verifyEd(_fixupMaybeUint8Array(signature), _toBase64(message), _fixupMaybeUint8Array(publicKey));
+    },
     verify: async (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(signature, btoa(data), keyTag, 'SHA512withRSA'),
     verifyWithAlgorithm: async (signature, data, keyTag, algorithm) => RNRSAKeychain.verify64WithAlgorithm(signature, btoa(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'),
     verify64: (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(signature, data, keyTag),
     verify64WithAlgorithm: (signature, data, keyTag, algorithm) => RNRSAKeychain.verify64WithAlgorithm(signature, data, keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'),
     getPublicKey: (keyTag) => RNRSAKeychain.getPublicKey(keyTag),
+    getPublicKeyEd: (keyTag) => RNRSAKeychain.getPublicKeyEd(keyTag),
     getPublicKeyDER: (keyTag) => RNRSAKeychain.getPublicKeyDER(keyTag),
     getPublicKeyRSA: (keyTag) => RNRSAKeychain.getPublicKeyRSA(keyTag),
     getAllKeys: () => RNRSAKeychain.getAllKeys(),
@@ -74,4 +83,17 @@ exports.RSAKeychain = {
     SHA512withECDSA: RNRSAKeychain.SHA512withECDSA,
     SHA1withECDSA: RNRSAKeychain.SHA1withECDSA,
 };
+function _toBase64(arg) {
+    return typeof arg === 'string'
+        ? btoa(arg)
+        : btoa(String.fromCharCode(...arg));
+}
+function _fixupMaybeUint8Array(arg) {
+    return typeof arg === 'string' ? arg : btoa(String.fromCharCode(...arg));
+}
+function _fromBase64(arg) {
+    return new Uint8Array(atob(arg)
+        .split('')
+        .map((c) => c.charCodeAt(0)));
+}
 exports.default = RNRSA;

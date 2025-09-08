@@ -164,6 +164,7 @@ const keychainDemo = async () => {
 
     const RSA_TAG = 'rsa_tag3';
     const EC_TAG = 'ec_tag3';
+    const ED_TAG = 'ed_tag';
 
     const list0 = await RSAKeychain.getAllKeys();
     console.log('pre-pre-list:', list0);
@@ -174,6 +175,9 @@ const keychainDemo = async () => {
     console.log(keys.public);
     const ec_keys = await RSAKeychain.generateEC(EC_TAG);
     console.log('ec_keys:', ec_keys);
+
+    const ed_keys = await RSAKeychain.generateEd(ED_TAG);
+    console.log('ed_keys:', ed_keys);
 
     const list2 = await RSAKeychain.getAllKeys();
     console.log('list2:', list2);
@@ -189,12 +193,50 @@ const keychainDemo = async () => {
     console.log('verified', valid);
     const publicKey = await RSAKeychain.getPublicKey(RSA_TAG);
     console.log('getPublicKey', publicKey);
+    const signature_ec = await RSAKeychain.signWithAlgorithm(
+      secret,
+      EC_TAG,
+      'SHA256withECDSA',
+    );
+    console.log('signature_ec', signature_ec);
+
+    const found_ed_keys = await RSAKeychain.getPublicKeyEd(ED_TAG);
+    console.log('found_ed_keys:', found_ed_keys);
+
+    console.log('secret:', secret);
+    const signature_ed = await RSAKeychain.signEd(secret, ED_TAG);
+    console.log('signature_ed', btoa(String.fromCharCode(...signature_ed)));
+
+    const valid_ed = await RSAKeychain.verifyEd(
+      btoa(String.fromCharCode(...signature_ed)),
+      secret,
+      _fromBase64(found_ed_keys.public),
+    );
+    console.log('valid_ed:', valid_ed);
+
+    const TEST_SIG_ED = _fromBase64(
+      'D3gM9FcjV4S49egdfJUrWy5FMVoW9hZH_xKuL0M6JDcjQMnslxSTGcvli0NthI-wSSNg9KNlawvAPA0Y_5K3CA',
+    );
+    const TEST_MSG = 'secret message';
+    const TEST_PUB_ED = _fromBase64(
+      'x5dnrX6PZV7BKRCrrrQml5UAtT_iG8naPSWlS1-3QAA',
+    );
+
+    const valid_ed2 = await RSAKeychain.verifyEd(
+      TEST_SIG_ED,
+      TEST_MSG,
+      TEST_PUB_ED,
+    );
+    console.log('valid_ed2:', valid_ed2);
 
     const success = await RSAKeychain.deletePrivateKey(RSA_TAG);
     console.log('delete success', success);
 
     const success_ec = await RSAKeychain.deletePrivateKey(EC_TAG);
     console.log('delete_ec success', success_ec);
+
+    const success_ed = await RSAKeychain.deletePrivateKey(ED_TAG);
+    console.log('delete_ed success', success_ed);
 
     const list3 = await RSAKeychain.getAllKeys();
     console.log('list3:', list3);
@@ -206,18 +248,29 @@ const keychainDemo = async () => {
 const runDemos = async () => {
   try {
     await keychainDemo();
-    //await generateKeys4096Demo()
-    //await generateDemo()
-    //await signDemo()
-    //await signAlgoDemo()
-    //await iosDemo()
-    //await androidDemo()
+    await generateKeys4096Demo();
+    await generateDemo();
+    await signDemo();
+    await signAlgoDemo();
+    await iosDemo();
+    await androidDemo();
   } catch (e) {
     console.log('threw runDemos:', e);
   }
 };
 
 runDemos().then();
+
+function _fromBase64(arg) {
+  const s =
+    arg.replace(/-/g, '+').replace(/_/g, '/') +
+    '=='.slice(0, (4 - (arg.length % 4)) % 4);
+  return new Uint8Array(
+    atob(s)
+      .split('')
+      .map(c => c.charCodeAt(0)),
+  );
+}
 
 class App extends Component {
   render() {

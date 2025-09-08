@@ -105,6 +105,8 @@ export const RSAKeychain = {
     RNRSAKeychain.generateKeys(keyTag, keySize),
   generateEC: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.generateEC(keyTag),
+  generateEd: (keyTag: string): Promise<PublicKey> =>
+    RNRSAKeychain.generateEd(keyTag),
   generateCSR: (
     keyTag: string,
     CN: string,
@@ -159,6 +161,24 @@ export const RSAKeychain = {
       keyTag,
       signature ?? 'SHA512withRSA'
     ),
+  signEd: async (
+    message: string | Uint8Array,
+    keyTag: string
+  ): Promise<Uint8Array> => {
+    const signature = await RNRSAKeychain.signEd(_toBase64(message), keyTag);
+    return _fromBase64(signature);
+  },
+  verifyEd: async (
+    signature: string | Uint8Array,
+    message: string | Uint8Array,
+    publicKey: string | Uint8Array
+  ): Promise<boolean> => {
+    return await RNRSAKeychain.verifyEd(
+      _fixupMaybeUint8Array(signature),
+      _toBase64(message),
+      _fixupMaybeUint8Array(publicKey)
+    );
+  },
   verify: async (
     signature: string,
     data: string,
@@ -202,6 +222,8 @@ export const RSAKeychain = {
     ),
   getPublicKey: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKey(keyTag),
+  getPublicKeyEd: (keyTag: string): Promise<PublicKey> =>
+    RNRSAKeychain.getPublicKeyEd(keyTag),
   getPublicKeyDER: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKeyDER(keyTag),
   getPublicKeyRSA: (keyTag: string): Promise<PublicKey> =>
@@ -215,6 +237,22 @@ export const RSAKeychain = {
   SHA512withECDSA: RNRSAKeychain.SHA512withECDSA,
   SHA1withECDSA: RNRSAKeychain.SHA1withECDSA,
 };
+
+function _toBase64(arg: string | Uint8Array): string {
+  return typeof arg === 'string'
+    ? btoa(arg)
+    : btoa(String.fromCharCode(...arg));
+}
+function _fixupMaybeUint8Array(arg: string | Uint8Array): string {
+  return typeof arg === 'string' ? arg : btoa(String.fromCharCode(...arg));
+}
+function _fromBase64(arg: string): Uint8Array {
+  return new Uint8Array(
+    atob(arg)
+      .split('')
+      .map((c) => c.charCodeAt(0))
+  );
+}
 
 export { RNRSAKeychain, RNRSA };
 export default RNRSA;
