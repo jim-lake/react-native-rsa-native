@@ -1,19 +1,15 @@
 import { NativeModules } from 'react-native';
-
 const { RNRSAKeychain, RNRSA } = NativeModules;
 
 export interface PublicKey {
   public: string;
 }
-
 export interface CSRKey {
   csr: string;
 }
-
 export interface KeyPair extends PublicKey {
   private: string;
 }
-
 export type TypeCrypto =
   | 'SHA256withRSA'
   | 'SHA512withRSA'
@@ -21,7 +17,17 @@ export type TypeCrypto =
   | 'SHA256withECDSA'
   | 'SHA512withECDSA'
   | 'SHA1withECDSA';
-
+export interface KeychainItem {
+  class: string;
+  type: string;
+  size: number;
+  public: string;
+  extractable: boolean;
+  tag: string;
+  label: string;
+  syncronizable: boolean;
+  accessControl: string;
+}
 export const RSA = {
   generate: (): Promise<KeyPair> => RNRSA.generateKeys(2048),
   generateKeys: (keySize: number): Promise<KeyPair> =>
@@ -228,7 +234,7 @@ export const RSAKeychain = {
     RNRSAKeychain.getPublicKeyDER(keyTag),
   getPublicKeyRSA: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKeyRSA(keyTag),
-  getAllKeys: (): Promise<any[]> => RNRSAKeychain.getAllKeys(),
+  getAllKeys: (): Promise<KeychainItem[]> => RNRSAKeychain.getAllKeys(),
   deleteAllKeys: (): Promise<boolean> => RNRSAKeychain.deleteAllKeys(),
   SHA256withRSA: RNRSAKeychain.SHA256withRSA,
   SHA512withRSA: RNRSAKeychain.SHA512withRSA,

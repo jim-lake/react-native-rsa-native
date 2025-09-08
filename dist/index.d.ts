@@ -9,6 +9,17 @@ export interface KeyPair extends PublicKey {
     private: string;
 }
 export type TypeCrypto = 'SHA256withRSA' | 'SHA512withRSA' | 'SHA1withRSA' | 'SHA256withECDSA' | 'SHA512withECDSA' | 'SHA1withECDSA';
+export interface KeychainItem {
+    class: string;
+    type: string;
+    size: number;
+    public: string;
+    extractable: boolean;
+    tag: string;
+    label: string;
+    syncronizable: boolean;
+    accessControl: string;
+}
 export declare const RSA: {
     generate: () => Promise<KeyPair>;
     generateKeys: (keySize: number) => Promise<KeyPair>;
@@ -57,7 +68,7 @@ export declare const RSAKeychain: {
     getPublicKeyEd: (keyTag: string) => Promise<PublicKey>;
     getPublicKeyDER: (keyTag: string) => Promise<PublicKey>;
     getPublicKeyRSA: (keyTag: string) => Promise<PublicKey>;
-    getAllKeys: () => Promise<any[]>;
+    getAllKeys: () => Promise<KeychainItem[]>;
     deleteAllKeys: () => Promise<boolean>;
     SHA256withRSA: any;
     SHA512withRSA: any;
