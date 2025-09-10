@@ -7,15 +7,15 @@
 
 @interface RCT_EXTERN_MODULE(RNRSAKeychain, NSObject)
 
-RCT_EXTERN_METHOD(generateKeys:(NSString *)keyTag keySize:(int)keySize resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(generateKeys:(NSString *)keyTag keySize:(int)keySize synchronizable:(BOOL)synchronizable label:(NSString *)label resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(generateCSR:(NSString *)keyTag CN:(NSString *)CN withAlgorithm:(NSString *)withAlgorithm resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(generateCSRWithEC:(NSString *)CN keyTag:(NSString *)keyTag keySize:(int)keySize resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(generateEC:(NSString *)keyTag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(generateEC:(NSString *)keyTag synchronizable:(BOOL)synchronizable label:(NSString *)label resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(generateEd:(NSString *)keyTag resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(generateEd:(NSString *)keyTag synchronizable:(BOOL)synchronizable label:(NSString *)label resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(sign64WithAlgorithm:(NSString *)message keyTag:(NSString *)keyTag withAlgorithm:(NSString *)withAlgorithm resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 

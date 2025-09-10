@@ -304,24 +304,33 @@ public class RSA {
     }
 
     public void generate(String keyTag, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
-        this.generate(keyTag, 2048, context);
+        this.generate(keyTag, 2048, false, null, context);
     }
+    
     @TargetApi(18)
     public void generate(String keyTag, int keySize, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
+        this.generate(keyTag, keySize, false, null, context);
+    }
+    
+    @TargetApi(18)
+    public void generate(String keyTag, int keySize, boolean synchronizable, String label, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(ALGORITHM, "AndroidKeyStore");
         if (android.os.Build.VERSION.SDK_INT >= 23) {
-            kpg.initialize(
-                new KeyGenParameterSpec.Builder(
-                    keyTag,
-                    PURPOSE_ENCRYPT | PURPOSE_DECRYPT | PURPOSE_SIGN | PURPOSE_VERIFY
-                )
-                .setKeySize(keySize)
-                .setDigests(DIGEST_SHA256, DIGEST_SHA512, DIGEST_SHA1)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
-                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-                .build()
-            );
+            KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
+                keyTag,
+                PURPOSE_ENCRYPT | PURPOSE_DECRYPT | PURPOSE_SIGN | PURPOSE_VERIFY
+            )
+            .setKeySize(keySize)
+            .setDigests(DIGEST_SHA256, DIGEST_SHA512, DIGEST_SHA1)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+            .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1);
+            
+            // Note: Android KeyStore doesn't support synchronizable like iOS
+            // The label parameter is also not directly supported in Android KeyStore
+            // These parameters are accepted for API compatibility but not used
+            
+            kpg.initialize(builder.build());
         } else {
             Calendar endDate = Calendar.getInstance();
             endDate.add(Calendar.YEAR, 1);
@@ -392,6 +401,50 @@ public class RSA {
         } catch (OperatorCreationException e) {
             e.printStackTrace();
         }
+    }
+
+    @TargetApi(18)
+    public void generateEC(String keyTag, boolean synchronizable, String label, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore");
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
+                keyTag,
+                PURPOSE_SIGN | PURPOSE_VERIFY
+            )
+            .setKeySize(256)
+            .setDigests(DIGEST_SHA256, DIGEST_SHA512, DIGEST_SHA1);
+            
+            // Note: Android KeyStore doesn't support synchronizable like iOS
+            // The label parameter is also not directly supported in Android KeyStore
+            // These parameters are accepted for API compatibility but not used
+            
+            kpg.initialize(builder.build());
+        } else {
+            Calendar endDate = Calendar.getInstance();
+            endDate.add(Calendar.YEAR, 1);
+            KeyPairGeneratorSpec.Builder keyPairGeneratorSpec = new KeyPairGeneratorSpec.Builder(context)
+                .setAlias(keyTag)
+                .setSubject(new X500Principal(
+                    String.format("CN=%s, OU=%s", keyTag, context.getPackageName())
+                ))
+                .setSerialNumber(BigInteger.ONE)
+                .setStartDate(Calendar.getInstance().getTime())
+                .setEndDate(endDate.getTime());
+            if (android.os.Build.VERSION.SDK_INT >= 19) {
+                keyPairGeneratorSpec.setKeySize(256).setKeyType(KeyProperties.KEY_ALGORITHM_EC);
+            }
+            kpg.initialize(keyPairGeneratorSpec.build());
+        }
+
+        KeyPair keyPair = kpg.genKeyPair();
+        this.publicKey = keyPair.getPublic();
+    }
+
+    @TargetApi(18)
+    public void generateEd(String keyTag, boolean synchronizable, String label, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
+        // Note: Ed25519 is not directly supported in Android KeyStore
+        // This method is provided for API compatibility but will throw an exception
+        throw new NoSuchAlgorithmException("Ed25519 is not supported in Android KeyStore");
     }
 
 

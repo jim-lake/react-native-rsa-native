@@ -43,10 +43,10 @@ export declare const RSA: {
     SHA1withECDSA: any;
 };
 export declare const RSAKeychain: {
-    generate: (keyTag: string) => Promise<PublicKey>;
-    generateKeys: (keyTag: string, keySize: number) => Promise<PublicKey>;
-    generateEC: (keyTag: string) => Promise<PublicKey>;
-    generateEd: (keyTag: string) => Promise<PublicKey>;
+    generate: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    generateKeys: (keyTag: string, keySize: number, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    generateEC: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    generateEd: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
     generateCSR: (keyTag: string, CN: string, signature?: TypeCrypto) => Promise<CSRKey>;
     generateCSRWithEC: (cn: string, keyTag: string, keySize: number) => Promise<PublicKey & CSRKey>;
     deletePrivateKey: (keyTag: string) => Promise<boolean>;

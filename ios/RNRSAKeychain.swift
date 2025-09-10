@@ -27,15 +27,18 @@ class RNRSAKeychain: NSObject {
   // MARK: - Helper Methods
 
   private static func getPrivateKey(keyTag: String) -> SecKey? {
-    let query: [String: Any] = [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
       kSecReturnRef as String: true,
     ]
-
     var result: CFTypeRef?
-    let status = SecItemCopyMatching(query as CFDictionary, &result)
-
+    var status = SecItemCopyMatching(query as CFDictionary, &result)
+    if status == errSecSuccess {
+      return result as! SecKey?
+    }
+    query[kSecAttrSynchronizable as String] = kCFBooleanTrue
+    status = SecItemCopyMatching(query as CFDictionary, &result)
     if status == errSecSuccess {
       return result as! SecKey?
     }
@@ -120,21 +123,29 @@ class RNRSAKeychain: NSObject {
 
   @objc
   func generateKeys(
-    _ keyTag: String, keySize: Int, resolver resolve: RCTPromiseResolveBlock,
-    rejecter reject: RCTPromiseRejectBlock
+    _ keyTag: String, keySize: Int, synchronizable: Bool, label: String?,
+    resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock
   ) {
-    let privateKeyParameters: [String: Any] = [
+    var privateKeyParameters: [String: Any] = [
       kSecAttrIsPermanent as String: true,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
-      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecAttrAccessible as String: synchronizable
+        ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
+    if let label = label, !label.isEmpty {
+      privateKeyParameters[kSecAttrLabel as String] = label
+    }
 
-    let parameters: [String: Any] = [
+    var parameters: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
       kSecAttrKeySizeInBits as String: keySize,
       kSecReturnRef as String: true,
+      kSecAttrIsPermanent as String: true,
       kSecPrivateKeyAttrs as String: privateKeyParameters,
     ]
+    if synchronizable {
+      parameters[kSecAttrSynchronizable as String] = true
+    }
 
     var error: Unmanaged<CFError>?
     guard let privateKey = SecKeyCreateRandomKey(parameters as CFDictionary, &error) else {
@@ -153,14 +164,22 @@ class RNRSAKeychain: NSObject {
 
   @objc
   func generateEC(
-    _ keyTag: String, resolver resolve: RCTPromiseResolveBlock,
-    rejecter reject: RCTPromiseRejectBlock
+    _ keyTag: String, synchronizable: Bool, label: String?,
+    resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock
   ) {
-    let privateKeyParameters: [String: Any] = [
+    var privateKeyParameters: [String: Any] = [
       kSecAttrIsPermanent as String: true,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
       kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
+
+    if synchronizable {
+      privateKeyParameters[kSecAttrSynchronizable as String] = true
+    }
+
+    if let label = label, !label.isEmpty {
+      privateKeyParameters[kSecAttrLabel as String] = label
+    }
 
     let parameters: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
@@ -185,14 +204,22 @@ class RNRSAKeychain: NSObject {
 
   @objc
   func generateEd(
-    _ keyTag: String, resolver resolve: RCTPromiseResolveBlock,
-    rejecter reject: RCTPromiseRejectBlock
+    _ keyTag: String, synchronizable: Bool, label: String?,
+    resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock
   ) {
-    let privateKeyParameters: [String: Any] = [
+    var privateKeyParameters: [String: Any] = [
       kSecAttrIsPermanent as String: true,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
       kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
+
+    if synchronizable {
+      privateKeyParameters[kSecAttrSynchronizable as String] = true
+    }
+
+    if let label = label, !label.isEmpty {
+      privateKeyParameters[kSecAttrLabel as String] = label
+    }
 
     let parameters: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
@@ -484,13 +511,14 @@ class RNRSAKeychain: NSObject {
     _ keyTag: String, resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
-    let query: [String: Any] = [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
     ]
-
-    let status = SecItemDelete(query as CFDictionary)
-    resolve(status == errSecSuccess)
+    let status1 = SecItemDelete(query as CFDictionary)
+    query[kSecAttrSynchronizable as String] = kCFBooleanTrue
+    let status2 = SecItemDelete(query as CFDictionary)
+    resolve(status1 == errSecSuccess || status2 == errSecSuccess)
   }
 
   // MARK: - CSR Generation Methods
@@ -527,7 +555,7 @@ class RNRSAKeychain: NSObject {
     rejecter reject: RCTPromiseRejectBlock
   ) {
     generateEC(
-      keyTag,
+      keyTag, synchronizable: false, label: nil,
       resolver: { result in
         guard let keyResult = result as? [String: String],
           let publicKey = keyResult["public"]
@@ -573,142 +601,145 @@ class RNRSAKeychain: NSObject {
 
   @objc
   func getAllKeys(_ resolver: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
-    let query: [String: Any] = [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecReturnAttributes as String: true,
       kSecReturnRef as String: true,
       kSecMatchLimit as String: kSecMatchLimitAll,
+      kSecAttrSynchronizable as String: kCFBooleanFalse,
     ]
+    var results = [[String: Any]]()
 
-    var result: CFTypeRef?
-    let status = SecItemCopyMatching(query as CFDictionary, &result)
-    var keysInfo: [[String: Any]] = []
-
-    if status == errSecSuccess,
-      let items = result as? [[String: Any]]
+    var items: CFTypeRef?
+    if SecItemCopyMatching(query as CFDictionary, &items) == errSecSuccess,
+      let keys = items as? [[String: Any]]
     {
-      for item in items {
-        let keyTypeNumber = item[kSecAttrKeyType as String] as? NSNumber
-        let keyTypeInt = keyTypeNumber?.intValue ?? 0
-        let keyTypeString: String
-        switch keyTypeInt {
-        case 42:  // kSecAttrKeyTypeRSA
-          keyTypeString = "RSA"
-        case 73:  // kSecAttrKeyTypeECSECPrimeRandom
-          keyTypeString = "EC"
-        case 77:  // kSecAttrKeyTypeEd25519
-          keyTypeString = "Ed25519"
-        default:
-          keyTypeString = "Type \(keyTypeInt)"
-        }
-        let keyClassNumber = item[kSecAttrKeyClass as String] as? NSNumber
-        let keyClassString: String
-        let keyPublicKey: String
-        if let keyClass = keyClassNumber {
-          switch keyClass.intValue {
-          case 0:  // kSecAttrKeyClassPublic
-            keyClassString = "Public"
-          case 1:  // kSecAttrKeyClassPrivate
-            keyClassString = "Private"
-          case 2:  // kSecAttrKeyClassSymmetric
-            keyClassString = "Symmetric"
-          default:
-            keyClassString = "Unknown (\(keyClass.intValue))"
-          }
-          if let keyRef = item[kSecValueRef as String] {
-            var publicKeyData: Data?
+      results.append(contentsOf: keys)
+    }
+    query[kSecAttrSynchronizable as String] = kCFBooleanTrue
+    if SecItemCopyMatching(query as CFDictionary, &items) == errSecSuccess,
+      let keys = items as? [[String: Any]]
+    {
+      results.append(contentsOf: keys)
+    }
 
-            switch keyClass.intValue {
-            case 0:
-              if let secKey = keyRef as! SecKey? {
+    var keysInfo: [[String: Any]] = []
+    for item in results {
+      let keyTypeNumber = item[kSecAttrKeyType as String] as? NSNumber
+      let keyTypeInt = keyTypeNumber?.intValue ?? 0
+      let keyTypeString: String
+      switch keyTypeInt {
+      case 42:  // kSecAttrKeyTypeRSA
+        keyTypeString = "RSA"
+      case 73:  // kSecAttrKeyTypeECSECPrimeRandom
+        keyTypeString = "EC"
+      case 77:  // kSecAttrKeyTypeEd25519
+        keyTypeString = "Ed25519"
+      default:
+        keyTypeString = "Type \(keyTypeInt)"
+      }
+      let keyClassNumber = item[kSecAttrKeyClass as String] as? NSNumber
+      let keyClassString: String
+      let keyPublicKey: String
+      if let keyClass = keyClassNumber {
+        switch keyClass.intValue {
+        case 0:  // kSecAttrKeyClassPublic
+          keyClassString = "Public"
+        case 1:  // kSecAttrKeyClassPrivate
+          keyClassString = "Private"
+        case 2:  // kSecAttrKeyClassSymmetric
+          keyClassString = "Symmetric"
+        default:
+          keyClassString = "Unknown (\(keyClass.intValue))"
+        }
+        if let keyRef = item[kSecValueRef as String] {
+          var publicKeyData: Data?
+
+          switch keyClass.intValue {
+          case 0:
+            if let secKey = keyRef as! SecKey? {
+              var error: Unmanaged<CFError>?
+              if let keyData = SecKeyCopyExternalRepresentation(secKey, &error) {
+                publicKeyData = keyData as Data
+              }
+            }
+            break
+          case 1:
+            if let privateKey = keyRef as! SecKey? {
+              if let publicKey = SecKeyCopyPublicKey(privateKey) {
                 var error: Unmanaged<CFError>?
-                if let keyData = SecKeyCopyExternalRepresentation(secKey, &error) {
+                if let keyData = SecKeyCopyExternalRepresentation(publicKey, &error) {
                   publicKeyData = keyData as Data
                 }
               }
-              break
-            case 1:
-              if let privateKey = keyRef as! SecKey? {
-                if let publicKey = SecKeyCopyPublicKey(privateKey) {
-                  var error: Unmanaged<CFError>?
-                  if let keyData = SecKeyCopyExternalRepresentation(publicKey, &error) {
-                    publicKeyData = keyData as Data
-                  }
-                }
-              }
-              break
-            default:
-              break
             }
+            break
+          default:
+            break
+          }
 
-            if let data = publicKeyData {
-              keyPublicKey = data.base64EncodedString()
-            } else {
-              keyPublicKey = ""
-            }
+          if let data = publicKeyData {
+            keyPublicKey = data.base64EncodedString()
           } else {
             keyPublicKey = ""
           }
         } else {
-          keyClassString = "Unknown"
           keyPublicKey = ""
         }
-
-        let keyAppTag: String
-        if let appTag = item[kSecAttrApplicationTag as String] as? Data {
-          if let tagString = String(data: appTag, encoding: .utf8) {
-            keyAppTag = tagString
-          } else {
-            // Fallback for binary data - use hex representation
-            keyAppTag = appTag.map { String(format: "%02x", $0) }.joined()
-          }
-        } else {
-          keyAppTag = ""
-        }
-        let keyLabel: String
-        if let labelData = item[kSecAttrLabel as String] as? Data {
-          keyLabel = String(data: labelData, encoding: .utf8) ?? "Unknown"
-        } else {
-          keyLabel = ""
-        }
-        let keyAccessControl: String
-        if let accessControl = item[kSecAttrAccessControl as String] {
-          keyAccessControl = String(describing: accessControl)
-        } else {
-          keyAccessControl = ""
-        }
-
-        let info: [String: Any] = [
-          "class": keyClassString,
-          "type": keyTypeString,
-          "size": item[kSecAttrKeySizeInBits as String] as? Int ?? 0,
-          "public": keyPublicKey,
-          "extractable": (item[kSecAttrIsExtractable as String] as? NSNumber)?.boolValue ?? false,
-          "tag": keyAppTag,
-          "label": keyLabel,
-          "syncronizable": (item[kSecAttrSynchronizable as String] as? NSNumber)?.boolValue
-            ?? false,
-          "accessControl": keyAccessControl,
-        ]
-        keysInfo.append(info)
+      } else {
+        keyClassString = "Unknown"
+        keyPublicKey = ""
       }
 
-    } else if status == errSecItemNotFound {
-      resolver(keysInfo)
-      return
+      let keyAppTag: String
+      if let appTag = item[kSecAttrApplicationTag as String] as? Data {
+        if let tagString = String(data: appTag, encoding: .utf8) {
+          keyAppTag = tagString
+        } else {
+          // Fallback for binary data - use hex representation
+          keyAppTag = appTag.map { String(format: "%02x", $0) }.joined()
+        }
+      } else {
+        keyAppTag = ""
+      }
+      let keyLabel: String
+      if let labelString = item[kSecAttrLabel as String] as? String {
+        keyLabel = labelString
+      } else {
+        keyLabel = ""
+      }
+      let keyAccessControl: String
+      if let accessControl = item[kSecAttrAccessControl as String] {
+        keyAccessControl = String(describing: accessControl)
+      } else {
+        keyAccessControl = ""
+      }
+
+      let info: [String: Any] = [
+        "class": keyClassString,
+        "type": keyTypeString,
+        "size": item[kSecAttrKeySizeInBits as String] as? Int ?? 0,
+        "public": keyPublicKey,
+        "extractable": (item[kSecAttrIsExtractable as String] as? NSNumber)?.boolValue ?? false,
+        "tag": keyAppTag,
+        "label": keyLabel,
+        "syncronizable": (item[kSecAttrSynchronizable as String] as? NSNumber)?.boolValue
+          ?? false,
+        "accessControl": keyAccessControl,
+      ]
+      keysInfo.append(info)
     }
-    guard status == errSecSuccess else {
-      reject("SEC_KEY_ENUM_ERROR", "Failed to enumerate keys: \(status)", nil)
-      return
-    }
+
     resolver(keysInfo)
   }
 
   @objc
   func deleteAllKeys(_ resolver: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) {
-    let query: [String: Any] = [
+    var query: [String: Any] = [
       kSecClass as String: kSecClassKey
     ]
+    SecItemDelete(query as CFDictionary)
+    query[kSecAttrSynchronizable as String] = kCFBooleanTrue
     let status = SecItemDelete(query as CFDictionary)
     resolver(status == errSecSuccess)
   }

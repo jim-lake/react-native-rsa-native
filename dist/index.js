@@ -36,10 +36,10 @@ exports.RSA = {
     SHA1withECDSA: RNRSA.SHA1withECDSA,
 };
 exports.RSAKeychain = {
-    generate: (keyTag) => RNRSAKeychain.generateKeys(keyTag, 2048),
-    generateKeys: (keyTag, keySize) => RNRSAKeychain.generateKeys(keyTag, keySize),
-    generateEC: (keyTag) => RNRSAKeychain.generateEC(keyTag),
-    generateEd: (keyTag) => RNRSAKeychain.generateEd(keyTag),
+    generate: (keyTag, synchronizable, label) => RNRSAKeychain.generateKeys(keyTag, 2048, synchronizable !== null && synchronizable !== void 0 ? synchronizable : false, label !== null && label !== void 0 ? label : null),
+    generateKeys: (keyTag, keySize, synchronizable, label) => RNRSAKeychain.generateKeys(keyTag, keySize, synchronizable !== null && synchronizable !== void 0 ? synchronizable : false, label !== null && label !== void 0 ? label : null),
+    generateEC: (keyTag, synchronizable, label) => RNRSAKeychain.generateEC(keyTag, synchronizable !== null && synchronizable !== void 0 ? synchronizable : false, label !== null && label !== void 0 ? label : null),
+    generateEd: (keyTag, synchronizable, label) => RNRSAKeychain.generateEd(keyTag, synchronizable !== null && synchronizable !== void 0 ? synchronizable : false, label !== null && label !== void 0 ? label : null),
     generateCSR: (keyTag, CN, signature) => RNRSAKeychain.generateCSR(keyTag, CN, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA'),
     generateCSRWithEC: (cn, keyTag, keySize) => RNRSAKeychain.generateCSRWithEC(cn, keyTag, keySize),
     deletePrivateKey: (keyTag) => RNRSAKeychain.deletePrivateKey(keyTag),

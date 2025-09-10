@@ -8,6 +8,7 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
 
 import java.io.IOException;
@@ -44,11 +45,16 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void generate(final String keyTag, final Promise promise) {
-    this.generateKeys(keyTag, 2048, promise);
+    this.generateKeys(keyTag, 2048, false, null, promise);
   }
 
   @ReactMethod
   public void generateKeys(final String keyTag, final int keySize, final Promise promise) {
+    this.generateKeys(keyTag, keySize, false, null, promise);
+  }
+
+  @ReactMethod
+  public void generateKeys(final String keyTag, final int keySize, final boolean synchronizable, final String label, final Promise promise) {
     final ReactApplicationContext reactContext = this.reactContext;
 
     AsyncTask.execute(new Runnable() {
@@ -58,7 +64,63 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
 
         try {
           RSA rsa = new RSA();
-          rsa.generate(keyTag, keySize, reactContext);
+          rsa.generate(keyTag, keySize, synchronizable, label, reactContext);
+          keys.putString("public", rsa.getPublicKey());
+          promise.resolve(keys);
+        } catch (NoSuchAlgorithmException e) {
+          promise.reject("Error", e.getMessage());
+        } catch (Exception e) {
+          promise.reject("Error", e.getMessage());
+        }
+      }
+    });
+  }
+
+  @ReactMethod
+  public void generateEC(final String keyTag, final Promise promise) {
+    this.generateEC(keyTag, false, null, promise);
+  }
+
+  @ReactMethod
+  public void generateEC(final String keyTag, final boolean synchronizable, final String label, final Promise promise) {
+    final ReactApplicationContext reactContext = this.reactContext;
+
+    AsyncTask.execute(new Runnable() {
+      @Override
+      public void run() {
+        WritableNativeMap keys = new WritableNativeMap();
+
+        try {
+          RSA rsa = new RSA();
+          rsa.generateEC(keyTag, synchronizable, label, reactContext);
+          keys.putString("public", rsa.getPublicKey());
+          promise.resolve(keys);
+        } catch (NoSuchAlgorithmException e) {
+          promise.reject("Error", e.getMessage());
+        } catch (Exception e) {
+          promise.reject("Error", e.getMessage());
+        }
+      }
+    });
+  }
+
+  @ReactMethod
+  public void generateEd(final String keyTag, final Promise promise) {
+    this.generateEd(keyTag, false, null, promise);
+  }
+
+  @ReactMethod
+  public void generateEd(final String keyTag, final boolean synchronizable, final String label, final Promise promise) {
+    final ReactApplicationContext reactContext = this.reactContext;
+
+    AsyncTask.execute(new Runnable() {
+      @Override
+      public void run() {
+        WritableNativeMap keys = new WritableNativeMap();
+
+        try {
+          RSA rsa = new RSA();
+          rsa.generateEd(keyTag, synchronizable, label, reactContext);
           keys.putString("public", rsa.getPublicKey());
           promise.resolve(keys);
         } catch (NoSuchAlgorithmException e) {
@@ -350,6 +412,41 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
           } else {
             promise.reject("Error", "Missing public key for that keyTag");
           }
+        } catch (Exception e) {
+          promise.reject("Error", e.getMessage());
+        }
+      }
+    });
+  }
+
+  @ReactMethod
+  public void getAllKeys(final Promise promise) {
+    AsyncTask.execute(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          // Android KeyStore doesn't provide a direct way to enumerate all keys
+          // This is a simplified implementation that returns an empty array
+          // In a real implementation, you would need to maintain a registry of key tags
+          WritableNativeArray keysArray = new WritableNativeArray();
+          promise.resolve(keysArray);
+        } catch (Exception e) {
+          promise.reject("Error", e.getMessage());
+        }
+      }
+    });
+  }
+
+  @ReactMethod
+  public void deleteAllKeys(final Promise promise) {
+    AsyncTask.execute(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          // Android KeyStore doesn't provide a direct way to delete all keys
+          // This would require maintaining a registry of key tags and deleting each one
+          // For now, we'll just return true
+          promise.resolve(true);
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());
         }

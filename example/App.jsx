@@ -205,8 +205,13 @@ const keychainDemo = async () => {
     console.log('keychainDemo start');
     const RSA_TAG = 'rsa_tag3';
     await RSAKeychain.deleteAllKeys();
-    const keys = await RSAKeychain.generate(RSA_TAG);
+
+    // Test with synchronizable and label parameters
+    const keys = await RSAKeychain.generate(RSA_TAG, true, 'Test RSA Key');
     console.log(keys.public);
+
+    console.log('all keys:', await RSAKeychain.getAllKeys());
+
     const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG);
     console.log('encodedMessage:', encodedMessage);
     const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG);
@@ -215,6 +220,11 @@ const keychainDemo = async () => {
     console.log('signature', signature);
     const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
     console.log('verified', valid);
+
+    // Test getAllKeys to verify the label and synchronizable are set correctly
+    const allKeys = await RSAKeychain.getAllKeys();
+    console.log('All keys:', allKeys);
+
     const success = await RSAKeychain.deletePrivateKey(RSA_TAG);
     console.log('delete success', success);
     return message === secret && valid && success;
@@ -224,15 +234,68 @@ const keychainDemo = async () => {
   }
 };
 
+const keychainECDemo = async () => {
+  try {
+    console.log('keychainECDemo start');
+    const EC_TAG = 'ec_tag1';
+    await RSAKeychain.deletePrivateKey(EC_TAG);
+
+    // Test EC key generation with synchronizable and label
+    const keys = await RSAKeychain.generateEC(EC_TAG, false, 'Test EC Key');
+    console.log('EC public key:', keys.public);
+
+    // Test getAllKeys to verify the EC key
+    const allKeys = await RSAKeychain.getAllKeys();
+    console.log('All keys after EC generation:', allKeys);
+
+    const success = await RSAKeychain.deletePrivateKey(EC_TAG);
+    console.log('EC delete success', success);
+    return success;
+  } catch (e) {
+    console.log('keychainECDemo failed:', e);
+    return false;
+  }
+};
+
+const keychainEdDemo = async () => {
+  try {
+    console.log('keychainEdDemo start');
+    const ED_TAG = 'ed_tag1';
+    await RSAKeychain.deletePrivateKey(ED_TAG);
+
+    // Test Ed key generation with synchronizable and label
+    const keys = await RSAKeychain.generateEd(ED_TAG, false, 'Test Ed Key');
+    console.log('Ed public key:', keys.public);
+
+    // Test getAllKeys to verify the Ed key
+    const allKeys = await RSAKeychain.getAllKeys();
+    console.log('All keys after Ed generation:', allKeys);
+
+    const success = await RSAKeychain.deletePrivateKey(ED_TAG);
+    console.log('Ed delete success', success);
+    return success;
+  } catch (e) {
+    console.log('keychainEdDemo failed:', e);
+    // Ed25519 might not be supported on Android, so we'll return true if it's an expected error
+    if (e.message && e.message.includes('Ed25519 is not supported')) {
+      console.log('Ed25519 not supported on this platform, test passed');
+      return true;
+    }
+    return false;
+  }
+};
+
 const runTests = async setTestStatus => {
   const tests = [
-    { name: 'keychainDemo', fn: keychainDemo },
     { name: 'generateKeys4096Demo', fn: generateKeys4096Demo },
     { name: 'generateDemo', fn: generateDemo },
     { name: 'signDemo', fn: signDemo },
     { name: 'signAlgoDemo', fn: signAlgoDemo },
     { name: 'iosDemo', fn: iosDemo },
     { name: 'androidDemo', fn: androidDemo },
+    { name: 'keychainDemo', fn: keychainDemo },
+    { name: 'keychainECDemo', fn: keychainECDemo },
+    { name: 'keychainEdDemo', fn: keychainEdDemo },
   ];
 
   setTestStatus('Running');

@@ -105,14 +105,41 @@ export const RSA = {
 };
 
 export const RSAKeychain = {
-  generate: (keyTag: string): Promise<PublicKey> =>
-    RNRSAKeychain.generateKeys(keyTag, 2048),
-  generateKeys: (keyTag: string, keySize: number): Promise<PublicKey> =>
-    RNRSAKeychain.generateKeys(keyTag, keySize),
-  generateEC: (keyTag: string): Promise<PublicKey> =>
-    RNRSAKeychain.generateEC(keyTag),
-  generateEd: (keyTag: string): Promise<PublicKey> =>
-    RNRSAKeychain.generateEd(keyTag),
+  generate: (
+    keyTag: string,
+    synchronizable?: boolean,
+    label?: string
+  ): Promise<PublicKey> =>
+    RNRSAKeychain.generateKeys(
+      keyTag,
+      2048,
+      synchronizable ?? false,
+      label ?? null
+    ),
+  generateKeys: (
+    keyTag: string,
+    keySize: number,
+    synchronizable?: boolean,
+    label?: string
+  ): Promise<PublicKey> =>
+    RNRSAKeychain.generateKeys(
+      keyTag,
+      keySize,
+      synchronizable ?? false,
+      label ?? null
+    ),
+  generateEC: (
+    keyTag: string,
+    synchronizable?: boolean,
+    label?: string
+  ): Promise<PublicKey> =>
+    RNRSAKeychain.generateEC(keyTag, synchronizable ?? false, label ?? null),
+  generateEd: (
+    keyTag: string,
+    synchronizable?: boolean,
+    label?: string
+  ): Promise<PublicKey> =>
+    RNRSAKeychain.generateEd(keyTag, synchronizable ?? false, label ?? null),
   generateCSR: (
     keyTag: string,
     CN: string,
