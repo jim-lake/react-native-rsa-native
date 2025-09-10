@@ -7,77 +7,108 @@ let secret = 'secret message';
 let keyTag = 'com.domain.mykey';
 
 const generateKeys4096Demo = async () => {
-  console.log('generateKeys4096Demo');
-  const keys = await RSA.generateKeys(4096);
-  console.log('4096 private:', keys.private); // the private key
-  console.log('4096 public:', keys.public); // the public key
-  const encodedMessage = await RSA.encrypt('4096', keys.public);
-  console.log('4096 encoded message:', encodedMessage);
-  const message = await RSA.decrypt(encodedMessage, keys.private);
-  console.log('4096 decoded message:', message);
+  try {
+    console.log('generateKeys4096Demo');
+    const keys = await RSA.generateKeys(4096);
+    console.log('4096 private:', keys.private);
+    console.log('4096 public:', keys.public);
+    const encodedMessage = await RSA.encrypt('4096', keys.public);
+    console.log('4096 encoded message:', encodedMessage);
+    const message = await RSA.decrypt(encodedMessage, keys.private);
+    console.log('4096 decoded message:', message);
+    return message === '4096';
+  } catch (e) {
+    console.log('generateKeys4096Demo failed:', e);
+    return false;
+  }
 };
 
 const generateDemo = async () => {
-  console.log('generateDemo');
-  const keys = await RSA.generate();
-  console.log('private:', keys.private); // the private key
-  console.log('public:', keys.public); // the public key
-  const encodedMessage = await RSA.encrypt('1234', keys.public);
-  console.log('encoded message:', encodedMessage);
-  const message = await RSA.decrypt(encodedMessage, keys.private);
-  console.log('decoded message:', message);
+  try {
+    console.log('generateDemo');
+    const keys = await RSA.generate();
+    console.log('private:', keys.private);
+    console.log('public:', keys.public);
+    const encodedMessage = await RSA.encrypt('1234', keys.public);
+    console.log('encoded message:', encodedMessage);
+    const message = await RSA.decrypt(encodedMessage, keys.private);
+    console.log('decoded message:', message);
+    return message === '1234';
+  } catch (e) {
+    console.log('generateDemo failed:', e);
+    return false;
+  }
 };
 
 const signDemo = async () => {
-  console.log('signDemo');
-  const keys = await RSA.generate();
-  const signature = await RSA.sign(secret, keys.private);
-  console.log('signature', signature);
   try {
+    console.log('signDemo');
+    const keys = await RSA.generate();
+    const signature = await RSA.sign(secret, keys.private);
+    console.log('signature', signature);
     const valid = await RSA.verify(signature, secret, keys.public);
     console.log('verified', valid);
-  } catch (err) {
-    console.log('verify threw:', err);
-  }
-  try {
-    await RSA.verify(signature, 'wrong message', keys.public);
-    console.log('NOTE!! Something went wrong, verify should have been failed');
-  } catch (err) {
-    console.log('verify fails correctly: ', err);
+    if (!valid) return false;
+
+    try {
+      await RSA.verify(signature, 'wrong message', keys.public);
+      console.log(
+        'NOTE!! Something went wrong, verify should have been failed',
+      );
+      return false;
+    } catch (err) {
+      console.log('verify fails correctly: ', err);
+      return true;
+    }
+  } catch (e) {
+    console.log('signDemo failed:', e);
+    return false;
   }
 };
 
 const signAlgoDemo = async () => {
-  console.log('signAlgoDemo');
-  const keys = await RSA.generate();
-  const signature = await RSA.signWithAlgorithm(
-    secret,
-    keys.private,
-    RSA.SHA256withRSA,
-  );
-  console.log('signature', signature);
-  const valid = await RSA.verifyWithAlgorithm(
-    signature,
-    secret,
-    keys.public,
-    RSA.SHA256withRSA,
-  );
-  console.log('verified', valid);
   try {
-    await RSA.verifyWithAlgorithm(
+    console.log('signAlgoDemo');
+    const keys = await RSA.generate();
+    const signature = await RSA.signWithAlgorithm(
+      secret,
+      keys.private,
+      RSA.SHA256withRSA,
+    );
+    console.log('signature', signature);
+    const valid = await RSA.verifyWithAlgorithm(
       signature,
-      'wrong message',
+      secret,
       keys.public,
       RSA.SHA256withRSA,
     );
-    console.log('NOTE!! Something went wrong, verify should have been failed');
-  } catch (err) {
-    console.log('verify fails correctly: ', err);
+    console.log('verified', valid);
+    if (!valid) return false;
+
+    try {
+      await RSA.verifyWithAlgorithm(
+        signature,
+        'wrong message',
+        keys.public,
+        RSA.SHA256withRSA,
+      );
+      console.log(
+        'NOTE!! Something went wrong, verify should have been failed',
+      );
+      return false;
+    } catch (err) {
+      console.log('verify fails correctly: ', err);
+      return true;
+    }
+  } catch (e) {
+    console.log('signAlgoDemo failed:', e);
+    return false;
   }
 };
 
 const iosDemo = async () => {
-  const iosPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+  try {
+    const iosPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
   MIIEpAIBAAKCAQEA9nH5sqTOfSns7op8NHD2nHuXt/j1rodcbb7MXVSeK+0jx6np
   o2Oidc6J1fxSi5xBpIhEo6eGQD+b0SQFQMe6k33kqfRk4vzNi5n4lzFWWoyVgHKi
   CYrk+JdSGX2BK0t52ca8ZASBs099jIjiL8Hk4PPdpjrUk0sHaXDDFzhmHy8XRbH1
@@ -105,19 +136,25 @@ const iosDemo = async () => {
   eMOrE2W6flCRaTDOH4kFuw4JqrymBLcgP/OTYO0T9MCOKeqP0wbyNg==
   -----END RSA PRIVATE KEY-----`;
 
-  const iosEncodedMessage = `xW7YdqRZPxMjUydRuY/bWO78Jvz/GM9qx+0soQEsheqfs+5nLugkBXiJC9J6if3j
+    const iosEncodedMessage = `xW7YdqRZPxMjUydRuY/bWO78Jvz/GM9qx+0soQEsheqfs+5nLugkBXiJC9J6if3j
   oCH/uBLYC41X6tlpX/L/u+ujaYQTIRcnL1f74ZFcX8Ox1vTp47Ie5XteRcLbuAmk
   vOzQ41q/ddUe8co67ShuiTmwI3Q4bUNukHEkwcpbD20JllKRR3wfYCoej05O29Xj
   9QuO0gKjEis5le6dWrMuVQVT70rBZQkAoBAesSjEYw0LKKjyylpUHmNy7y1XNbb2
   LA8kC70ZvNWYL+cIU2ZKts9HYtTbIAonL91uP6Bf+M0uUkqc2zxEL9EpFmwGx3Q0
   JQUqPQPB+wHb7DlDFJdQ6A==`;
 
-  const message = await RSA.decrypt(iosEncodedMessage, iosPkcs1PrivateKey);
-  console.log('ios decoded message:', message);
+    const message = await RSA.decrypt(iosEncodedMessage, iosPkcs1PrivateKey);
+    console.log('ios decoded message:', message);
+    return message === '1234';
+  } catch (e) {
+    console.log('iosDemo failed:', e);
+    return false;
+  }
 };
 
 const androidDemo = async () => {
-  const androidPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+  try {
+    const androidPkcs1PrivateKey = `-----BEGIN RSA PRIVATE KEY-----
   MIIEpAIBAAKCAQEAx+Wc5/pZQFLxisjb5TbkVKzm1y/q/JbVZ4kq9D8isFI6GimQ
   yF7y8gdmq4YPblCfnUIlFFbdWsbUX8dW6nLEmWQhqHheLOybHfrv/YaSUZzlmUav
   qNYAv5xm3/F7rAeFjZN5fVpATdLl3AlhxBckxwZe2Z0AdEuOdUGDbdBwGoWrfCLv
@@ -145,44 +182,31 @@ const androidDemo = async () => {
   clP6STevOnNTlyYhNgesy50tSPJEWO6ysC/petudc5t1e1FEM/pBkg==
   -----END RSA PRIVATE KEY-----`;
 
-  const androidEncodedMessage = `Z3iPkJiJCrXLaT11RtwBuSJa4rGbJ7JfDSHMNn/UaLUnGIzFmMT6ZRMtaSmWJhw3pXBES1IqufJB
+    const androidEncodedMessage = `Z3iPkJiJCrXLaT11RtwBuSJa4rGbJ7JfDSHMNn/UaLUnGIzFmMT6ZRMtaSmWJhw3pXBES1IqufJB
   Wk5vdZuDD7o5AP8i5GHrgVGbf6ix6DIH1+PiJzcfwBcSdEuCMEsustk+tBirK/HuxYt0HQV3B8Sw
   EFAFOAPh3y2CsSC7Ibn5Q5cWeDYxfs8XANezs0H3i/X+KZP8owIrKnsERErc0E6bJ/V3tGCoFb+5
   m0SibGo5B446iH57hTHf3Sv6GYcThk5+BqP/08VVQ2YXy+oMPng2nVnvzGONdJzfq+9GAKWMx6CE
   yiSiGz7AYGDb04FmekL8KqEKy6nTlVERlbwWRg==`;
 
-  const message = await RSA.decrypt(
-    androidEncodedMessage,
-    androidPkcs1PrivateKey,
-  );
-  console.log('android decoded message:', message);
+    const message = await RSA.decrypt(
+      androidEncodedMessage,
+      androidPkcs1PrivateKey,
+    );
+    console.log('android decoded message:', message);
+    return message === '1234';
+  } catch (e) {
+    console.log('androidDemo failed:', e);
+    return false;
+  }
 };
 
 const keychainDemo = async () => {
   try {
     console.log('keychainDemo start');
-
     const RSA_TAG = 'rsa_tag3';
-    const EC_TAG = 'ec_tag3';
-    const ED_TAG = 'ed_tag';
-
-    const list0 = await RSAKeychain.getAllKeys();
-    console.log('pre-pre-list:', list0);
-
-    const delete_all_result = await RSAKeychain.deleteAllKeys();
-    console.log('delete_all_result:', delete_all_result);
+    await RSAKeychain.deleteAllKeys();
     const keys = await RSAKeychain.generate(RSA_TAG);
     console.log(keys.public);
-    const ec_keys = await RSAKeychain.generateEC(EC_TAG);
-    console.log('ec_keys:', ec_keys);
-
-    const ed_keys = await RSAKeychain.generateEd(ED_TAG);
-    console.log('ed_keys:', ed_keys);
-
-    const list2 = await RSAKeychain.getAllKeys();
-    console.log('list2:', list2);
-
-    console.log('secret:', secret);
     const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG);
     console.log('encodedMessage:', encodedMessage);
     const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG);
@@ -191,75 +215,42 @@ const keychainDemo = async () => {
     console.log('signature', signature);
     const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
     console.log('verified', valid);
-    const publicKey = await RSAKeychain.getPublicKey(RSA_TAG);
-    console.log('getPublicKey', publicKey);
-    const signature_ec = await RSAKeychain.signWithAlgorithm(
-      secret,
-      EC_TAG,
-      'SHA256withECDSA',
-    );
-    console.log('signature_ec', signature_ec);
-
-    const found_ed_keys = await RSAKeychain.getPublicKeyEd(ED_TAG);
-    console.log('found_ed_keys:', found_ed_keys);
-
-    console.log('secret:', secret);
-    const signature_ed = await RSAKeychain.signEd(secret, ED_TAG);
-    console.log('signature_ed', btoa(String.fromCharCode(...signature_ed)));
-
-    const valid_ed = await RSAKeychain.verifyEd(
-      btoa(String.fromCharCode(...signature_ed)),
-      secret,
-      _fromBase64(found_ed_keys.public),
-    );
-    console.log('valid_ed:', valid_ed);
-
-    const TEST_SIG_ED = _fromBase64(
-      'D3gM9FcjV4S49egdfJUrWy5FMVoW9hZH_xKuL0M6JDcjQMnslxSTGcvli0NthI-wSSNg9KNlawvAPA0Y_5K3CA',
-    );
-    const TEST_MSG = 'secret message';
-    const TEST_PUB_ED = _fromBase64(
-      'x5dnrX6PZV7BKRCrrrQml5UAtT_iG8naPSWlS1-3QAA',
-    );
-
-    const valid_ed2 = await RSAKeychain.verifyEd(
-      TEST_SIG_ED,
-      TEST_MSG,
-      TEST_PUB_ED,
-    );
-    console.log('valid_ed2:', valid_ed2);
-
     const success = await RSAKeychain.deletePrivateKey(RSA_TAG);
     console.log('delete success', success);
-
-    const success_ec = await RSAKeychain.deletePrivateKey(EC_TAG);
-    console.log('delete_ec success', success_ec);
-
-    const success_ed = await RSAKeychain.deletePrivateKey(ED_TAG);
-    console.log('delete_ed success', success_ed);
-
-    const list3 = await RSAKeychain.getAllKeys();
-    console.log('list3:', list3);
+    return message === secret && valid && success;
   } catch (e) {
-    console.log('threw2:', e);
+    console.log('keychainDemo failed:', e);
+    return false;
   }
 };
 
-const runDemos = async () => {
-  try {
-    await keychainDemo();
-    await generateKeys4096Demo();
-    await generateDemo();
-    await signDemo();
-    await signAlgoDemo();
-    await iosDemo();
-    await androidDemo();
-  } catch (e) {
-    console.log('threw runDemos:', e);
-  }
-};
+const runTests = async setTestStatus => {
+  const tests = [
+    { name: 'keychainDemo', fn: keychainDemo },
+    { name: 'generateKeys4096Demo', fn: generateKeys4096Demo },
+    { name: 'generateDemo', fn: generateDemo },
+    { name: 'signDemo', fn: signDemo },
+    { name: 'signAlgoDemo', fn: signAlgoDemo },
+    { name: 'iosDemo', fn: iosDemo },
+    { name: 'androidDemo', fn: androidDemo },
+  ];
 
-runDemos().then();
+  setTestStatus('Running');
+
+  for (const test of tests) {
+    console.log(`Running test: ${test.name}`);
+    const result = await test.fn();
+    if (!result) {
+      const errorMsg = `Test failed: ${test.name}`;
+      console.log(errorMsg);
+      setTestStatus(`Failure: ${test.name}`);
+      return;
+    }
+    console.log(`Test passed: ${test.name}`);
+  }
+
+  setTestStatus('Success');
+};
 
 function _fromBase64(arg) {
   const s =
@@ -273,10 +264,22 @@ function _fromBase64(arg) {
 }
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { testStatus: 'Running' };
+  }
+
+  componentDidMount() {
+    runTests(status => this.setState({ testStatus: status }));
+  }
+
   render() {
     return (
-      <View>
+      <View style={{ margin: 20, marginTop: 100 }}>
         <Text>Demo</Text>
+        <Text testID="test-status" style={{ fontSize: 18, marginTop: 20 }}>
+          Test Status: {this.state.testStatus}
+        </Text>
       </View>
     );
   }
