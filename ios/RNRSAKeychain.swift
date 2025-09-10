@@ -641,6 +641,7 @@ class RNRSAKeychain: NSObject {
       let keyClassNumber = item[kSecAttrKeyClass as String] as? NSNumber
       let keyClassString: String
       let keyPublicKey: String
+      var keyPublicEd25519: String = ""
       if let keyClass = keyClassNumber {
         switch keyClass.intValue {
         case 0:  // kSecAttrKeyClassPublic
@@ -670,6 +671,22 @@ class RNRSAKeychain: NSObject {
                 var error: Unmanaged<CFError>?
                 if let keyData = SecKeyCopyExternalRepresentation(publicKey, &error) {
                   publicKeyData = keyData as Data
+                }
+              }
+
+              // Check if this is Ed25519 and extractable
+              let keySize = item[kSecAttrKeySizeInBits as String] as? Int ?? 0
+              let isExtractable =
+                (item[kSecAttrIsExtractable as String] as? NSNumber)?.boolValue ?? false
+              if keySize == 256 && isExtractable && keyTypeInt == 73 {
+                var privError: Unmanaged<CFError>?
+                if let privData = SecKeyCopyExternalRepresentation(privateKey, &privError) as Data?
+                {
+                  if let priv = try? Curve25519.Signing.PrivateKey(
+                    rawRepresentation: privData.suffix(32))
+                  {
+                    keyPublicEd25519 = priv.publicKey.rawRepresentation.base64EncodedString()
+                  }
                 }
               }
             }
@@ -715,7 +732,7 @@ class RNRSAKeychain: NSObject {
         keyAccessControl = ""
       }
 
-      let info: [String: Any] = [
+      var info: [String: Any] = [
         "class": keyClassString,
         "type": keyTypeString,
         "size": item[kSecAttrKeySizeInBits as String] as? Int ?? 0,
@@ -727,6 +744,10 @@ class RNRSAKeychain: NSObject {
           ?? false,
         "accessControl": keyAccessControl,
       ]
+
+      if !keyPublicEd25519.isEmpty {
+        info["publicEd25519"] = keyPublicEd25519
+      }
       keysInfo.append(info)
     }
 

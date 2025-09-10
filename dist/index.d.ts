@@ -14,6 +14,7 @@ export interface KeychainItem {
     type: string;
     size: number;
     public: string;
+    publicEd25519?: string;
     extractable: boolean;
     tag: string;
     label: string;
