@@ -448,6 +448,13 @@ public class RSA {
     }
 
 
+    public boolean updatePrivateKey(String keyTag, String label, Context context) throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException, IOException, CertificateException {
+        // Note: Android KeyStore doesn't support updating key labels directly
+        // This method is provided for API compatibility with iOS but will return false
+        // as Android KeyStore keys are immutable once created
+        return false;
+    }
+
     public String getCSR() throws IOException {
         byte  CSRder[] = this.csr.getEncoded();
         return dataToPem(CSR_HEADER, CSRder);

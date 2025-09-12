@@ -534,6 +534,23 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
+  public void updatePrivateKey(final String keyTag, final String label, final Promise promise) {
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            try {
+              RSA rsa = new RSA();
+              boolean success = rsa.updatePrivateKey(keyTag, label, reactContext);
+              promise.resolve(success);
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
+
+  @ReactMethod
   public void deleteAllKeys(final Promise promise) {
     AsyncTask.execute(
         new Runnable() {

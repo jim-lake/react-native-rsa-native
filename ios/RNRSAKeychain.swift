@@ -170,24 +170,25 @@ class RNRSAKeychain: NSObject {
     var privateKeyParameters: [String: Any] = [
       kSecAttrIsPermanent as String: true,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
-      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecAttrAccessible as String: synchronizable
+        ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
-
-    if synchronizable {
-      privateKeyParameters[kSecAttrSynchronizable as String] = true
-    }
 
     if let label = label, !label.isEmpty {
       privateKeyParameters[kSecAttrLabel as String] = label
     }
 
-    let parameters: [String: Any] = [
+    var parameters: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeySizeInBits as String: 256,
       kSecReturnRef as String: true,
       kSecPrivateKeyAttrs as String: privateKeyParameters,
       kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
     ]
+    if synchronizable {
+      parameters[kSecAttrSynchronizable as String] = true
+    }
+
     var error: Unmanaged<CFError>?
     guard let privateKey = SecKeyCreateRandomKey(parameters as CFDictionary, &error) else {
       reject("KEY_GENERATION_ERROR", "Failed to generate EC key pair", nil)
@@ -210,23 +211,24 @@ class RNRSAKeychain: NSObject {
     var privateKeyParameters: [String: Any] = [
       kSecAttrIsPermanent as String: true,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
-      kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+      kSecAttrAccessible as String: synchronizable
+        ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
     ]
-
-    if synchronizable {
-      privateKeyParameters[kSecAttrSynchronizable as String] = true
-    }
 
     if let label = label, !label.isEmpty {
       privateKeyParameters[kSecAttrLabel as String] = label
     }
 
-    let parameters: [String: Any] = [
+    var parameters: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
       kSecAttrKeySizeInBits as String: 256,
       kSecReturnRef as String: true,
       kSecPrivateKeyAttrs as String: privateKeyParameters,
     ]
+    if synchronizable {
+      parameters[kSecAttrSynchronizable as String] = true
+    }
+
     var error: Unmanaged<CFError>?
     guard let privateKey = SecKeyCreateRandomKey(parameters as CFDictionary, &error) else {
       reject("KEY_GENERATION_ERROR", "Failed to generate Ed key", nil)
@@ -595,6 +597,30 @@ class RNRSAKeychain: NSObject {
     default:
       return .rsa(signatureType: .sha512)
     }
+  }
+
+  @objc
+  func updatePrivateKey(
+    _ keyTag: String, label: String, resolver resolve: RCTPromiseResolveBlock,
+    rejecter reject: RCTPromiseRejectBlock
+  ) {
+    var query: [String: Any] = [
+      kSecClass as String: kSecClassKey,
+      kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
+    ]
+    let attributesToUpdate: [String: Any] = [
+      kSecAttrLabel as String: label
+    ]
+
+    var status = SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
+    if status == errSecSuccess {
+      resolve(true)
+      return
+    }
+
+    query[kSecAttrSynchronizable as String] = kCFBooleanTrue
+    status = SecItemUpdate(query as CFDictionary, attributesToUpdate as CFDictionary)
+    resolve(status == errSecSuccess)
   }
 
   // MARK: - Key Enumeration Methods (Already Implemented)

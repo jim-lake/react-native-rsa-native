@@ -155,6 +155,8 @@ export const RSAKeychain = {
     RNRSAKeychain.generateCSRWithEC(cn, keyTag, keySize),
   deletePrivateKey: (keyTag: string): Promise<boolean> =>
     RNRSAKeychain.deletePrivateKey(keyTag),
+  updatePrivateKey: (keyTag: string, label: string): Promise<boolean> =>
+    RNRSAKeychain.updatePrivateKey(keyTag, label),
   encrypt: async (data: string, keyTag: string): Promise<string> => {
     return await RNRSAKeychain.encrypt64(btoa(data), keyTag);
   },

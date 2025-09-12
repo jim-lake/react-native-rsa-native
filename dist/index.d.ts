@@ -51,6 +51,7 @@ export declare const RSAKeychain: {
     generateCSR: (keyTag: string, CN: string, signature?: TypeCrypto) => Promise<CSRKey>;
     generateCSRWithEC: (cn: string, keyTag: string, keySize: number) => Promise<PublicKey & CSRKey>;
     deletePrivateKey: (keyTag: string) => Promise<boolean>;
+    updatePrivateKey: (keyTag: string, label: string) => Promise<boolean>;
     encrypt: (data: string, keyTag: string) => Promise<string>;
     decrypt: (data: string, keyTag: string) => Promise<string>;
     encrypt64: (data: string, keyTag: string) => Promise<string>;

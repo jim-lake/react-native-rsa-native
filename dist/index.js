@@ -43,6 +43,7 @@ exports.RSAKeychain = {
     generateCSR: (keyTag, CN, signature) => RNRSAKeychain.generateCSR(keyTag, CN, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA'),
     generateCSRWithEC: (cn, keyTag, keySize) => RNRSAKeychain.generateCSRWithEC(cn, keyTag, keySize),
     deletePrivateKey: (keyTag) => RNRSAKeychain.deletePrivateKey(keyTag),
+    updatePrivateKey: (keyTag, label) => RNRSAKeychain.updatePrivateKey(keyTag, label),
     encrypt: async (data, keyTag) => {
         return await RNRSAKeychain.encrypt64(btoa(data), keyTag);
     },
