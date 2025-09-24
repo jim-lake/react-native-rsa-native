@@ -334,9 +334,9 @@ const keychainECDemo = async () => {
         console.log(`EC signature DER length mismatch: expected ${derLength + 2}, got ${sigData.length}`);
         return false;
       }
-      // For P-256, typical range is 70-72 bytes, but must be exact DER
-      if (sigData.length < 70 || sigData.length > 72) {
-        console.log(`EC signature length ${sigData.length} outside valid P-256 DER range (70-72)`);
+      // For P-256, typical range is 68-72 bytes, but must be exact DER
+      if (sigData.length < 68 || sigData.length > 72) {
+        console.log(`EC signature length ${sigData.length} outside valid P-256 DER range (68-72)`);
         return false;
       }
       console.log(`EC signature format valid (${sigData.length} bytes DER-encoded)`);

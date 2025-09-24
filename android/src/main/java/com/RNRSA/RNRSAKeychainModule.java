@@ -444,8 +444,8 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
       return (String) method.invoke(rsa, header, data);
     } catch (Exception e) {
       // Fallback to manual PEM formatting
-      String base64 = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
-      return "-----BEGIN " + header + "-----\n" + base64 + "-----END " + header + "-----\n";
+      String base64 = android.util.Base64.encodeToString(data, android.util.Base64.NO_WRAP);
+      return "-----BEGIN " + header + "-----\n" + base64 + "\n-----END " + header + "-----\n";
     }
   }
 
