@@ -267,13 +267,31 @@ const keychainEdDemo = async () => {
     const keys = await RSAKeychain.generateEd(ED_TAG, false, 'Test Ed Key');
     console.log('Ed public key:', keys.public);
 
+    // Test getPublicKeyEd method
+    const publicKeyResult = await RSAKeychain.getPublicKeyEd(ED_TAG);
+    console.log('Retrieved Ed public key:', publicKeyResult.public);
+
+    // Test Ed25519 signing
+    const message = btoa('Hello Ed25519!'); // Base64 encode the message
+    const signature = await RSAKeychain.signEd(message, ED_TAG);
+    console.log('Ed signature:', signature);
+
+    // Test Ed25519 verification
+    const isValid = await RSAKeychain.verifyEd(signature, message, publicKeyResult.public);
+    console.log('Ed signature valid:', isValid);
+
+    // Test with invalid signature
+    const invalidSignature = btoa('invalid_signature_data');
+    const isInvalid = await RSAKeychain.verifyEd(invalidSignature, message, publicKeyResult.public);
+    console.log('Invalid Ed signature valid (should be false):', isInvalid);
+
     // Test getAllKeys to verify the Ed key
     const allKeys = await RSAKeychain.getAllKeys();
     console.log('All keys after Ed generation:', allKeys);
 
     const success = await RSAKeychain.deletePrivateKey(ED_TAG);
     console.log('Ed delete success', success);
-    return success;
+    return success && isValid && !isInvalid;
   } catch (e) {
     console.log('keychainEdDemo failed:', e);
     // Ed25519 might not be supported on Android, so we'll return true if it's an expected error

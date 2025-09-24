@@ -567,4 +567,63 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
           }
         });
   }
+
+  @ReactMethod
+  public void signEd(final String message, final String keyTag, final Promise promise) {
+    final ReactApplicationContext reactContext = this.reactContext;
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            try {
+              RSA rsa = new RSA();
+              String signature = rsa.signEd(message, keyTag, reactContext);
+              promise.resolve(signature);
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
+
+  @ReactMethod
+  public void verifyEd(final String signature, final String message, final String publicKey, final Promise promise) {
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            try {
+              RSA rsa = new RSA();
+              boolean verified = rsa.verifyEd(signature, message, publicKey);
+              promise.resolve(verified);
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
+
+  @ReactMethod
+  public void getPublicKeyEd(final String keyTag, final Promise promise) {
+    final ReactApplicationContext reactContext = this.reactContext;
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            try {
+              RSA rsa = new RSA();
+              String publicKey = rsa.getPublicKeyEd(keyTag, reactContext);
+              if (publicKey != null) {
+                WritableNativeMap result = new WritableNativeMap();
+                result.putString("public", publicKey);
+                promise.resolve(result);
+              } else {
+                promise.reject("Error", "Missing public key for that keyTag");
+              }
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
 }

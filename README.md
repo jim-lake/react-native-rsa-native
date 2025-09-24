@@ -33,6 +33,15 @@ or:
 ## Older React-Native versions
 If you are using an older version of React Native and are having issues try using v1.1.14
 
+## Building Android
+
+To build and test the Android library:
+
+```bash
+cd example/android
+./gradlew assembleDebug
+```
+
 ## Example Usage
 
 These basic examples show a typical use case using both promise chains

@@ -441,18 +441,30 @@ public class RSA {
     }
 
     @TargetApi(18)
-    public void generateEd(String keyTag, boolean synchronizable, String label, Context context) throws IOException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, NoSuchProviderException {
-        // Note: Ed25519 is not directly supported in Android KeyStore
-        // This method is provided for API compatibility but will throw an exception
-        throw new NoSuchAlgorithmException("Ed25519 is not supported in Android KeyStore");
+    public void generateEd(String keyTag, boolean synchronizable, String label, Context context) throws Exception {
+        String publicKeyB64 = Ed25519Helper.generateEd25519KeyPair(keyTag, label, context);
+        // Store the public key for compatibility with existing API
+        this.publicKey = null; // Ed25519 keys are stored separately
     }
 
 
-    public boolean updatePrivateKey(String keyTag, String label, Context context) throws KeyStoreException, UnrecoverableEntryException, NoSuchAlgorithmException, IOException, CertificateException {
-        // Note: Android KeyStore doesn't support updating key labels directly
-        // This method is provided for API compatibility with iOS but will return false
-        // as Android KeyStore keys are immutable once created
+    public boolean updatePrivateKey(String keyTag, String label, Context context) throws Exception {
+        if (keyTag != null) {
+            return Ed25519Helper.updateLabel(keyTag, label, context);
+        }
         return false;
+    }
+
+    public String signEd(String message, String keyTag, Context context) throws Exception {
+        return Ed25519Helper.sign(message, keyTag, context);
+    }
+    
+    public boolean verifyEd(String signature, String message, String publicKey) throws Exception {
+        return Ed25519Helper.verify(signature, message, publicKey);
+    }
+    
+    public String getPublicKeyEd(String keyTag, Context context) throws Exception {
+        return Ed25519Helper.getPublicKey(keyTag, context);
     }
 
     public String getCSR() throws IOException {
