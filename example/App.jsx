@@ -274,7 +274,7 @@ const keychainEdDemo = async () => {
     // Test Ed25519 signing
     const message = btoa('Hello Ed25519!'); // Base64 encode the message
     const signature = await RSAKeychain.signEd(message, ED_TAG);
-    console.log('Ed signature:', signature);
+    console.log('Ed signature: (converted from uint8 to b64):', uint8ArrayToBase64(signature));
 
     // Test Ed25519 verification
     const isValid = await RSAKeychain.verifyEd(signature, message, publicKeyResult.public);
@@ -294,11 +294,6 @@ const keychainEdDemo = async () => {
     return success && isValid && !isInvalid;
   } catch (e) {
     console.log('keychainEdDemo failed:', e);
-    // Ed25519 might not be supported on Android, so we'll return true if it's an expected error
-    if (e.message && e.message.includes('Ed25519 is not supported')) {
-      console.log('Ed25519 not supported on this platform, test passed');
-      return true;
-    }
     return false;
   }
 };
@@ -376,6 +371,15 @@ function _fromBase64(arg) {
       .split('')
       .map(c => c.charCodeAt(0)),
   );
+}
+
+function uint8ArrayToBase64(uint8Array) {
+  let binary = '';
+  const len = uint8Array.length;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  return btoa(binary);
 }
 
 class App extends Component {
