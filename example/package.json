@@ -7,7 +7,8 @@
     "ios": "react-native run-ios --simulator 'iPhone 16'",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "pretty": "prettier --write App.jsx"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.81.1",

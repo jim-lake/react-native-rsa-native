@@ -226,7 +226,11 @@ const keychainDemo = async () => {
       return false;
     }
 
-    const invalid = await RSAKeychain.verify(signature, 'wrong message', RSA_TAG);
+    const invalid = await RSAKeychain.verify(
+      signature,
+      'wrong message',
+      RSA_TAG,
+    );
     console.log('invalid:', invalid);
     if (invalid) {
       return false;
@@ -256,17 +260,31 @@ const keychainECDemo = async () => {
 
     // Test EC signing and verification
     const message = 'test message for EC';
-    const signature = await RSAKeychain.signWithAlgorithm(message, EC_TAG, 'SHA256withECDSA');
+    const signature = await RSAKeychain.signWithAlgorithm(
+      message,
+      EC_TAG,
+      'SHA256withECDSA',
+    );
     console.log('EC signature:', signature);
-    
-    const isValid = await RSAKeychain.verifyWithAlgorithm(signature, message, EC_TAG, 'SHA256withECDSA');
+
+    const isValid = await RSAKeychain.verifyWithAlgorithm(
+      signature,
+      message,
+      EC_TAG,
+      'SHA256withECDSA',
+    );
     console.log('EC signature valid:', isValid);
-    
+
     if (!isValid) {
       return false;
     }
     // Test negative verification for EC
-    const bad_is_valid = await RSAKeychain.verifyWithAlgorithm(signature, 'wrong message', EC_TAG, 'SHA256withECDSA');
+    const bad_is_valid = await RSAKeychain.verifyWithAlgorithm(
+      signature,
+      'wrong message',
+      EC_TAG,
+      'SHA256withECDSA',
+    );
     console.log('Wrong message verify:', bad_is_valid);
     if (bad_is_valid) {
       return false;
@@ -302,15 +320,26 @@ const keychainEdDemo = async () => {
     // Test Ed25519 signing
     const message = btoa('Hello Ed25519!'); // Base64 encode the message
     const signature = await RSAKeychain.signEd(message, ED_TAG);
-    console.log('Ed signature: (converted from uint8 to b64):', uint8ArrayToBase64(signature));
+    console.log(
+      'Ed signature: (converted from uint8 to b64):',
+      uint8ArrayToBase64(signature),
+    );
 
     // Test Ed25519 verification
-    const isValid = await RSAKeychain.verifyEd(signature, message, publicKeyResult.public);
+    const isValid = await RSAKeychain.verifyEd(
+      signature,
+      message,
+      publicKeyResult.public,
+    );
     console.log('Ed signature valid:', isValid);
 
     // Test with invalid signature
     const invalidSignature = btoa('invalid_signature_data');
-    const isInvalid = await RSAKeychain.verifyEd(invalidSignature, message, publicKeyResult.public);
+    const isInvalid = await RSAKeychain.verifyEd(
+      invalidSignature,
+      message,
+      publicKeyResult.public,
+    );
     console.log('Invalid Ed signature valid (should be false):', isInvalid);
 
     // Test getAllKeys to verify the Ed key
@@ -361,9 +390,9 @@ const updatePrivateKeyDemo = async () => {
 
 const publicKeyFormatsDemo = async () => {
   console.log('publicKeyFormatsDemo start');
-  
+
   const keyTag = 'format_test_key';
-  
+
   try {
     // Generate keychain key and get all formats
     await RSAKeychain.generateKeys(keyTag, 2048);
@@ -372,73 +401,126 @@ const publicKeyFormatsDemo = async () => {
     const publicKeyRSA = await RSAKeychain.getPublicKeyRSA(keyTag);
     const allKeys = await RSAKeychain.getAllKeys();
     const matchingKey = allKeys.find(key => key.tag === keyTag);
-    
-    console.log('Default public key (first 50 chars):', publicKeyDefault.public.substring(0, 50));
-    console.log('DER public key (first 50 chars):', publicKeyDER.public.substring(0, 50));
-    console.log('RSA public key (first 50 chars):', publicKeyRSA.public.substring(0, 50));
-    console.log('getAllKeys public key (first 50 chars):', matchingKey?.public?.substring(0, 50));
-    
+    if (!matchingKey) {
+      console.log("All keys didn't find key");
+      return false;
+    }
+
+    console.log('Default public key:', publicKeyDefault.public);
+    console.log('DER public key:', publicKeyDER.public);
+    console.log('RSA public key:', publicKeyRSA.public);
+    console.log('getAllKeys public key:', matchingKey.public);
+
     // Extract n and e from each format
-    const extractRSAParams = (pemKey) => {
+    const extractRSAParams = (pemKey, format = 'SPKI') => {
       try {
-        const pemContent = pemKey.replace(/-----BEGIN [^-]+-----/, '')
-                                 .replace(/-----END [^-]+-----/, '')
-                                 .replace(/\s/g, '');
+        // Clean PEM headers
+        const pemContent = pemKey
+          .replace(/-----BEGIN [^-]+-----/, '')
+          .replace(/-----END [^-]+-----/, '')
+          .replace(/\s/g, '');
         const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+
         const asn1 = fromBER(keyData.buffer);
-        if (asn1.offset === -1) return null;
-        
-        // Try DER format first
-        try {
-          const publicKeyInfo = new PublicKeyInfo({ schema: asn1.result });
-          const keyData = publicKeyInfo.subjectPublicKey.valueBlock.valueHex;
-          const keyAsn1 = fromBER(keyData);
-          const n = keyAsn1.result.valueBlock.value[0].valueBlock.valueHex;
-          const e = keyAsn1.result.valueBlock.value[1].valueBlock.valueHex;
-          return { 
-            n: Array.from(new Uint8Array(n)).map(b => b.toString(16).padStart(2, '0')).join(''),
-            e: Array.from(new Uint8Array(e)).map(b => b.toString(16).padStart(2, '0')).join('')
-          };
-        } catch (derError) {
-          // Try RSA format
-          const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
-          const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
-          return { 
-            n: Array.from(new Uint8Array(n)).map(b => b.toString(16).padStart(2, '0')).join(''),
-            e: Array.from(new Uint8Array(e)).map(b => b.toString(16).padStart(2, '0')).join('')
-          };
+        if (asn1.offset === -1) {
+          console.error('ASN.1 parsing failed');
+          throw new Error('Invalid key format');
         }
+
+        let nHex, eHex;
+
+        if (format === 'SPKI') {
+          try {
+            // Expect X.509 / SPKI format
+            const publicKeyInfo = new PublicKeyInfo({ schema: asn1.result });
+            const keyAsn1 = fromBER(
+              publicKeyInfo.subjectPublicKey.valueBlock.valueHex,
+            );
+            const n = keyAsn1.result.valueBlock.value[0].valueBlock.valueHex;
+            const e = keyAsn1.result.valueBlock.value[1].valueBlock.valueHex;
+            nHex = Array.from(new Uint8Array(n))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+            eHex = Array.from(new Uint8Array(e))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+          } catch {
+            console.error('Key does not match SPKI format');
+            throw new Error('Key does not match SPKI format');
+          }
+        } else if (format === 'PKCS1') {
+          try {
+            // Expect PKCS#1 format (RSA PUBLIC KEY)
+            const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
+            const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
+            nHex = Array.from(new Uint8Array(n))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+            eHex = Array.from(new Uint8Array(e))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+          } catch {
+            console.error('Key does not match PKCS#1 format');
+            throw new Error('Key does not match PKCS#1 format');
+          }
+        } else if (format === 'RAW') {
+          try {
+            // RAW PKCS#1 without any PEM headers/wrappers
+            // Expect only SEQUENCE { modulus, exponent }
+            const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
+            const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
+            nHex = Array.from(new Uint8Array(n))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+            eHex = Array.from(new Uint8Array(e))
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('');
+          } catch {
+            console.error('Key does not match RAW PKCS#1 format');
+            throw new Error('Key does not match RAW PKCS#1 format');
+          }
+        } else {
+          throw new Error(`Unsupported format: ${format}`);
+        }
+
+        return { n: nHex, e: eHex };
       } catch (e) {
-        console.log('Extraction error:', e);
+        console.error('Extraction error:', e);
         return null;
       }
     };
-    
-    const defaultParams = extractRSAParams(publicKeyDefault.public);
-    const derParams = extractRSAParams(publicKeyDER.public);
-    const rsaParams = extractRSAParams(publicKeyRSA.public);
-    const allKeysParams = extractRSAParams(matchingKey?.public);
-    
-    console.log('Default key n:', defaultParams?.n?.substring(0, 50) + '...');
-    console.log('Default key e:', defaultParams?.e);
-    console.log('DER key n:', derParams?.n?.substring(0, 50) + '...');
-    console.log('DER key e:', derParams?.e);
-    console.log('RSA key n:', rsaParams?.n?.substring(0, 50) + '...');
-    console.log('RSA key e:', rsaParams?.e);
-    console.log('getAllKeys key n:', allKeysParams?.n?.substring(0, 50) + '...');
-    console.log('getAllKeys key e:', allKeysParams?.e);
-    
+
+    const defaultParams = extractRSAParams(publicKeyDefault.public, 'PKCS1');
+    const derParams = extractRSAParams(publicKeyDER.public, 'SPKI');
+    const rsaParams = extractRSAParams(publicKeyRSA.public, 'PKCS1');
+    const allKeysParams = extractRSAParams(matchingKey.public, 'RAW');
+
+    console.log('Default key n:', defaultParams.n.substring(0, 50) + '...');
+    console.log('Default key e:', defaultParams.e);
+    console.log('DER key n:', derParams.n.substring(0, 50) + '...');
+    console.log('DER key e:', derParams.e);
+    console.log('RSA key n:', rsaParams.n.substring(0, 50) + '...');
+    console.log('RSA key e:', rsaParams.e);
+    console.log('getAllKeys key n:', allKeysParams.n.substring(0, 50) + '...');
+    console.log('getAllKeys key e:', allKeysParams.e);
+
     // Compare n and e
-    const sameN = defaultParams?.n === derParams?.n && derParams?.n === rsaParams?.n && rsaParams?.n === allKeysParams?.n;
-    const sameE = defaultParams?.e === derParams?.e && derParams?.e === rsaParams?.e && rsaParams?.e === allKeysParams?.e;
-    
+    const sameN =
+      defaultParams.n === derParams.n &&
+      derParams.n === rsaParams.n &&
+      rsaParams.n === allKeysParams.n;
+    const sameE =
+      defaultParams.e === derParams.e &&
+      derParams.e === rsaParams.e &&
+      rsaParams.e === allKeysParams.e;
+
     console.log('Same modulus (n):', sameN);
     console.log('Same exponent (e):', sameE);
     console.log('All keys identical:', sameN && sameE);
-    
+
     // Clean up
     await RSAKeychain.deletePrivateKey(keyTag);
-    
+
     return sameN && sameE;
   } catch (e) {
     console.log('publicKeyFormatsDemo error:', e);
