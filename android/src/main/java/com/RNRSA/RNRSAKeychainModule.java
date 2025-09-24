@@ -379,7 +379,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                     keyInfo.putString("type", privateKey.getAlgorithm());
                     keyInfo.putInt("size", getKeySize(privateKey));
                     
-                    // Format public key as raw base64 PKCS#1 format to match iOS behavior
+                    // Format public key to match the format returned by generate methods
                     String formattedPublicKey;
                     if (publicKey.getAlgorithm().equals("RSA")) {
                       // For RSA keys, extract PKCS#1 from X.509 DER format
@@ -392,8 +392,17 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                         formattedPublicKey = android.util.Base64.encodeToString(
                             publicKey.getEncoded(), android.util.Base64.NO_WRAP);
                       }
+                    } else if (publicKey.getAlgorithm().equals("EC")) {
+                      // For EC keys, extract raw uncompressed point to match generateEC behavior
+                      try {
+                        formattedPublicKey = extractECPublicKeyRaw(publicKey);
+                      } catch (Exception e) {
+                        // Fallback to X.509 format
+                        formattedPublicKey = android.util.Base64.encodeToString(
+                            publicKey.getEncoded(), android.util.Base64.NO_WRAP);
+                      }
                     } else {
-                      // For EC and other keys, use X.509 format
+                      // For other keys, use X.509 format
                       formattedPublicKey = android.util.Base64.encodeToString(
                           publicKey.getEncoded(), android.util.Base64.NO_WRAP);
                     }
@@ -413,12 +422,55 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                 }
               }
 
+              // Add Ed25519 keys from SharedPreferences
+              try {
+                java.util.Map<String, String> ed25519Keys = Ed25519Helper.getAllKeys(reactContext);
+                for (java.util.Map.Entry<String, String> entry : ed25519Keys.entrySet()) {
+                  WritableNativeMap keyInfo = new WritableNativeMap();
+                  keyInfo.putString("class", "Private");
+                  keyInfo.putString("type", "Ed25519");
+                  keyInfo.putInt("size", 256); // Ed25519 is 256-bit
+                  keyInfo.putString("public", entry.getValue());
+                  keyInfo.putBoolean("extractable", false);
+                  keyInfo.putString("tag", entry.getKey());
+                  keyInfo.putString("label", "");
+                  keyInfo.putBoolean("syncronizable", false);
+                  keyInfo.putString("accessControl", "");
+
+                  keysArray.pushMap(keyInfo);
+                }
+              } catch (Exception e) {
+                // Skip Ed25519 keys if there's an error
+              }
+
               promise.resolve(keysArray);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
           }
         });
+  }
+
+  private String extractECPublicKeyRaw(PublicKey publicKey) throws Exception {
+    // Get the DER-encoded public key
+    byte[] encoded = publicKey.getEncoded();
+    
+    // Parse the DER structure to extract the raw public key bytes
+    // For P-256, the raw public key is 65 bytes (0x04 + 32 bytes X + 32 bytes Y)
+    // We need to find the BIT STRING containing the public key
+    
+    // Simple DER parsing - look for the bit string tag (0x03)
+    for (int i = 0; i < encoded.length - 65; i++) {
+      if (encoded[i] == 0x03 && encoded[i + 1] == 0x42 && encoded[i + 2] == 0x00 && encoded[i + 3] == 0x04) {
+        // Found BIT STRING with length 0x42 (66 bytes), unused bits 0x00, and uncompressed point 0x04
+        byte[] rawKey = new byte[65];
+        System.arraycopy(encoded, i + 3, rawKey, 0, 65);
+        return android.util.Base64.encodeToString(rawKey, android.util.Base64.NO_WRAP);
+      }
+    }
+    
+    // Fallback: if we can't parse the DER, return the full encoded key
+    return android.util.Base64.encodeToString(encoded, android.util.Base64.NO_WRAP);
   }
 
   private byte[] convertPublicKeyToPkcs1(PublicKey publicKey) throws IOException {

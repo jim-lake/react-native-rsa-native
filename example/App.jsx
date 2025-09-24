@@ -310,6 +310,52 @@ const keychainECDemo = async () => {
     const keys = await RSAKeychain.generateEC(EC_TAG, false, 'Test EC Key');
     console.log('EC public key:', keys.public);
 
+    // Strict public key format verification for EC
+    try {
+      // EC public key from iOS keychain is raw uncompressed format (65 bytes for P-256)
+      const keyData = Uint8Array.from(atob(keys.public.replace(/\s/g, '')), c =>
+        c.charCodeAt(0),
+      );
+
+      // P-256 uncompressed public key: 0x04 + 32 bytes X + 32 bytes Y = 65 bytes total
+      if (keyData.length !== 65) {
+        console.log(
+          `EC public key should be 65 bytes (uncompressed P-256), got ${keyData.length}`,
+        );
+        return false;
+      }
+
+      // Must start with 0x04 (uncompressed point indicator)
+      if (keyData[0] !== 0x04) {
+        console.log(
+          `EC public key must start with 0x04 (uncompressed), got 0x${keyData[0].toString(
+            16,
+          )}`,
+        );
+        return false;
+      }
+
+      console.log(
+        'EC public key format validation passed (65 bytes uncompressed P-256)',
+      );
+    } catch (parseErr) {
+      console.log('EC public key format validation failed:', parseErr);
+      return false;
+    }
+
+    // Test getAllKeys and verify key consistency
+    const allKeys = await RSAKeychain.getAllKeys();
+    const matchingKey = allKeys.find(key => key.tag === EC_TAG);
+    if (!matchingKey) {
+      console.log('EC key not found in getAllKeys');
+      return false;
+    }
+    if (matchingKey.public !== keys.public) {
+      console.log('EC public key mismatch between generate and getAllKeys');
+      return false;
+    }
+    console.log('EC key consistency verified between generate and getAllKeys');
+
     // Test EC signing and verification
     const message = 'test message for EC';
     const signature = await RSAKeychain.signWithAlgorithm(
@@ -331,15 +377,23 @@ const keychainECDemo = async () => {
       // Length must be exactly what DER specifies (no padding, no truncation)
       const derLength = sigData[1];
       if (sigData.length !== derLength + 2) {
-        console.log(`EC signature DER length mismatch: expected ${derLength + 2}, got ${sigData.length}`);
+        console.log(
+          `EC signature DER length mismatch: expected ${derLength + 2}, got ${
+            sigData.length
+          }`,
+        );
         return false;
       }
       // For P-256, typical range is 68-72 bytes, but must be exact DER
       if (sigData.length < 68 || sigData.length > 72) {
-        console.log(`EC signature length ${sigData.length} outside valid P-256 DER range (68-72)`);
+        console.log(
+          `EC signature length ${sigData.length} outside valid P-256 DER range (68-72)`,
+        );
         return false;
       }
-      console.log(`EC signature format valid (${sigData.length} bytes DER-encoded)`);
+      console.log(
+        `EC signature format valid (${sigData.length} bytes DER-encoded)`,
+      );
     } catch (parseErr) {
       console.log('EC signature parsing failed:', parseErr);
       return false;
@@ -368,10 +422,6 @@ const keychainECDemo = async () => {
       return false;
     }
 
-    // Test getAllKeys to verify the EC key
-    const allKeys = await RSAKeychain.getAllKeys();
-    console.log('All keys after EC generation:', allKeys);
-
     const success = await RSAKeychain.deletePrivateKey(EC_TAG);
     console.log('EC delete success', success);
     return success;
@@ -391,9 +441,60 @@ const keychainEdDemo = async () => {
     const keys = await RSAKeychain.generateEd(ED_TAG, false, 'Test Ed Key');
     console.log('Ed public key:', keys.public);
 
+    // Strict public key format verification for Ed25519
+    try {
+      // Ed25519 public key from iOS keychain is raw 32-byte format
+      const keyData = Uint8Array.from(atob(keys.public.replace(/\s/g, '')), c =>
+        c.charCodeAt(0),
+      );
+
+      // Ed25519 public key should be exactly 32 bytes
+      if (keyData.length !== 32) {
+        console.log(
+          `Ed25519 public key should be 32 bytes, got ${keyData.length}`,
+        );
+        return false;
+      }
+
+      console.log('Ed25519 public key format validation passed (32 bytes raw)');
+    } catch (parseErr) {
+      console.log('Ed25519 public key format validation failed:', parseErr);
+      return false;
+    }
+
     // Test getPublicKeyEd method
     const publicKeyResult = await RSAKeychain.getPublicKeyEd(ED_TAG);
     console.log('Retrieved Ed public key:', publicKeyResult.public);
+
+    // Verify consistency between generateEd and getPublicKeyEd
+    if (keys.public !== publicKeyResult.public) {
+      console.log(
+        'Ed25519 public key mismatch between generateEd and getPublicKeyEd',
+      );
+      return false;
+    }
+
+    // Test getAllKeys and verify key consistency
+    const allKeys = await RSAKeychain.getAllKeys();
+    const matchingKey = allKeys.find(key => key.tag === ED_TAG);
+    if (!matchingKey) {
+      console.log('Ed25519 key not found in getAllKeys');
+      return false;
+    }
+
+    // For Ed25519 keys, the public key is stored in publicEd25519 field, not public field
+    const allKeysPublicKey = matchingKey.publicEd25519 || matchingKey.public;
+    if (allKeysPublicKey !== keys.public) {
+      console.log(
+        'Ed25519 public key mismatch between generate and getAllKeys',
+      );
+      console.log('Generate key:', keys.public);
+      console.log('getAllKeys key:', allKeysPublicKey);
+      return false;
+    }
+    console.log(
+      'Ed25519 key consistency verified between generate and getAllKeys',
+    );
 
     // Test Ed25519 signing
     const message = btoa('Hello Ed25519!'); // Base64 encode the message
@@ -407,7 +508,9 @@ const keychainEdDemo = async () => {
     try {
       // Ed25519 signatures are always exactly 64 bytes (512 bits)
       if (signature.length !== 64) {
-        console.log(`Ed25519 signature must be exactly 64 bytes, got ${signature.length} bytes`);
+        console.log(
+          `Ed25519 signature must be exactly 64 bytes, got ${signature.length} bytes`,
+        );
         return false;
       }
       // Verify it's a Uint8Array (not base64 string or other format)
@@ -437,10 +540,6 @@ const keychainEdDemo = async () => {
       publicKeyResult.public,
     );
     console.log('Invalid Ed signature valid (should be false):', isInvalid);
-
-    // Test getAllKeys to verify the Ed key
-    const allKeys = await RSAKeychain.getAllKeys();
-    console.log('All keys after Ed generation:', allKeys);
 
     const success = await RSAKeychain.deletePrivateKey(ED_TAG);
     console.log('Ed delete success', success);

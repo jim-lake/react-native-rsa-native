@@ -92,6 +92,24 @@ public class Ed25519Helper {
     
 
     
+    public static java.util.Map<String, String> getAllKeys(Context context) throws Exception {
+        SharedPreferences keysPrefs = getKeysPrefs(context);
+        SharedPreferences labelsPrefs = getLabelsPrefs(context);
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        
+        java.util.Map<String, ?> allKeys = keysPrefs.getAll();
+        for (String key : allKeys.keySet()) {
+            if (key.endsWith("_public")) {
+                String keyTag = key.substring(0, key.length() - "_public".length());
+                String publicKey = (String) allKeys.get(key);
+                String label = labelsPrefs.getString(keyTag, "");
+                result.put(keyTag, publicKey);
+            }
+        }
+        
+        return result;
+    }
+
     public static boolean deleteKey(String keyTag, Context context) throws Exception {
         SharedPreferences keysPrefs = getKeysPrefs(context);
         SharedPreferences labelsPrefs = getLabelsPrefs(context);

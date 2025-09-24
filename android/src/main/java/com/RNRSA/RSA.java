@@ -115,11 +115,44 @@ public class RSA {
             byte[] pkcs1PublicKey = publicKeyToPkcs1(this.publicKey);
             return dataToPem(PUBLIC_HEADER, pkcs1PublicKey);
         } else if (this.publicKey.getAlgorithm().equals("EC")) {
-            // For EC keys, return the standard X.509 format encoded as base64
-            return Base64.encodeToString(this.publicKey.getEncoded(), Base64.NO_WRAP);
+            // For EC keys, extract raw uncompressed point to match iOS behavior
+            return extractECPublicKeyRaw(this.publicKey);
         } else {
             // Fallback for other key types
             return Base64.encodeToString(this.publicKey.getEncoded(), Base64.NO_WRAP);
+        }
+    }
+
+    private String extractECPublicKeyRaw(PublicKey publicKey) throws IOException {
+        try {
+            // Get the DER-encoded public key
+            byte[] encoded = publicKey.getEncoded();
+            
+            // Parse the DER structure to extract the raw public key bytes
+            // X.509 SubjectPublicKeyInfo structure:
+            // SEQUENCE {
+            //   SEQUENCE { algorithm, parameters }
+            //   BIT STRING { public key }
+            // }
+            
+            // For P-256, the raw public key is 65 bytes (0x04 + 32 bytes X + 32 bytes Y)
+            // We need to find the BIT STRING containing the public key
+            
+            // Simple DER parsing - look for the bit string tag (0x03)
+            // This is a simplified approach that works for standard P-256 keys
+            for (int i = 0; i < encoded.length - 65; i++) {
+                if (encoded[i] == 0x03 && encoded[i + 1] == 0x42 && encoded[i + 2] == 0x00 && encoded[i + 3] == 0x04) {
+                    // Found BIT STRING with length 0x42 (66 bytes), unused bits 0x00, and uncompressed point 0x04
+                    byte[] rawKey = new byte[65];
+                    System.arraycopy(encoded, i + 3, rawKey, 0, 65);
+                    return Base64.encodeToString(rawKey, Base64.NO_WRAP);
+                }
+            }
+            
+            // Fallback: if we can't parse the DER, return the full encoded key
+            return Base64.encodeToString(encoded, Base64.NO_WRAP);
+        } catch (Exception e) {
+            throw new IOException("Failed to extract EC public key: " + e.getMessage());
         }
     }
 
