@@ -312,11 +312,9 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         new Runnable() {
           @Override
           public void run() {
-            WritableNativeMap keys = new WritableNativeMap();
-
             try {
               RSA rsa = new RSA(keyTag);
-              String publicKey = rsa.getPublicKey();
+              String publicKey = rsa.getPublicKeyDER();
               if (publicKey != null) {
                 WritableNativeMap result = new WritableNativeMap();
                 result.putString("public", publicKey);
@@ -337,11 +335,9 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         new Runnable() {
           @Override
           public void run() {
-            WritableNativeMap keys = new WritableNativeMap();
-
             try {
               RSA rsa = new RSA(keyTag);
-              String publicKey = rsa.getPublicKey();
+              String publicKey = rsa.getPublicKey(); // This returns PKCS#1 format
               if (publicKey != null) {
                 WritableNativeMap result = new WritableNativeMap();
                 result.putString("public", publicKey);

@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import { View, Text } from 'react-native';
+import { fromBER } from 'asn1js';
+import { PublicKeyInfo } from 'pkijs';
 
 import { RSA, RSAKeychain } from 'react-native-rsa-native';
 
@@ -357,6 +359,87 @@ const updatePrivateKeyDemo = async () => {
   }
 };
 
+const publicKeyFormatsDemo = async () => {
+  console.log('publicKeyFormatsDemo start');
+  
+  const keyTag = 'format_test_key';
+  
+  try {
+    // Generate keychain key and get all formats
+    await RSAKeychain.generateKeys(keyTag, 2048);
+    const publicKeyDefault = await RSAKeychain.getPublicKey(keyTag);
+    const publicKeyDER = await RSAKeychain.getPublicKeyDER(keyTag);
+    const publicKeyRSA = await RSAKeychain.getPublicKeyRSA(keyTag);
+    
+    console.log('Default public key (first 50 chars):', publicKeyDefault.substring(0, 50));
+    console.log('DER public key (first 50 chars):', publicKeyDER.public.substring(0, 50));
+    console.log('RSA public key (first 50 chars):', publicKeyRSA.public.substring(0, 50));
+    
+    // Extract n and e from each format
+    const extractRSAParams = (pemKey) => {
+      try {
+        const pemContent = pemKey.replace(/-----BEGIN [^-]+-----/, '')
+                                 .replace(/-----END [^-]+-----/, '')
+                                 .replace(/\s/g, '');
+        const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+        const asn1 = fromBER(keyData.buffer);
+        if (asn1.offset === -1) return null;
+        
+        // Try DER format first
+        try {
+          const publicKeyInfo = new PublicKeyInfo({ schema: asn1.result });
+          const keyData = publicKeyInfo.subjectPublicKey.valueBlock.valueHex;
+          const keyAsn1 = fromBER(keyData);
+          const n = keyAsn1.result.valueBlock.value[0].valueBlock.valueHex;
+          const e = keyAsn1.result.valueBlock.value[1].valueBlock.valueHex;
+          return { 
+            n: Array.from(new Uint8Array(n)).map(b => b.toString(16).padStart(2, '0')).join(''),
+            e: Array.from(new Uint8Array(e)).map(b => b.toString(16).padStart(2, '0')).join('')
+          };
+        } catch (derError) {
+          // Try RSA format
+          const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
+          const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
+          return { 
+            n: Array.from(new Uint8Array(n)).map(b => b.toString(16).padStart(2, '0')).join(''),
+            e: Array.from(new Uint8Array(e)).map(b => b.toString(16).padStart(2, '0')).join('')
+          };
+        }
+      } catch (e) {
+        console.log('Extraction error:', e);
+        return null;
+      }
+    };
+    
+    const defaultParams = extractRSAParams(publicKeyDefault);
+    const derParams = extractRSAParams(publicKeyDER.public);
+    const rsaParams = extractRSAParams(publicKeyRSA.public);
+    
+    console.log('Default key n:', defaultParams?.n?.substring(0, 50) + '...');
+    console.log('Default key e:', defaultParams?.e);
+    console.log('DER key n:', derParams?.n?.substring(0, 50) + '...');
+    console.log('DER key e:', derParams?.e);
+    console.log('RSA key n:', rsaParams?.n?.substring(0, 50) + '...');
+    console.log('RSA key e:', rsaParams?.e);
+    
+    // Compare n and e
+    const sameN = defaultParams?.n === derParams?.n && derParams?.n === rsaParams?.n;
+    const sameE = defaultParams?.e === derParams?.e && derParams?.e === rsaParams?.e;
+    
+    console.log('Same modulus (n):', sameN);
+    console.log('Same exponent (e):', sameE);
+    console.log('All keys identical:', sameN && sameE);
+    
+    // Clean up
+    await RSAKeychain.deletePrivateKey(keyTag);
+    
+    return sameN && sameE;
+  } catch (e) {
+    console.log('publicKeyFormatsDemo error:', e);
+    return false;
+  }
+};
+
 const runTests = async setTestStatus => {
   const tests = [
     { name: 'generateKeys4096Demo', fn: generateKeys4096Demo },
@@ -369,6 +452,7 @@ const runTests = async setTestStatus => {
     { name: 'keychainECDemo', fn: keychainECDemo },
     { name: 'keychainEdDemo', fn: keychainEdDemo },
     { name: 'updatePrivateKeyDemo', fn: updatePrivateKeyDemo },
+    { name: 'publicKeyFormatsDemo', fn: publicKeyFormatsDemo },
   ];
 
   setTestStatus('Running');

@@ -123,6 +123,15 @@ public class RSA {
         }
     }
 
+    public String getPublicKeyDER() throws IOException {
+        if (this.publicKey == null) {
+            throw new IOException("Public key is null");
+        }
+        
+        // Return X.509 format (standard DER encoding with "PUBLIC KEY" header)
+        return dataToPem("PUBLIC KEY", this.publicKey.getEncoded());
+    }
+
     public String getPrivateKey() throws IOException {
         byte[] pkcs1PrivateKey = privateKeyToPkcs1(this.privateKey);
         return dataToPem(PRIVATE_HEADER, pkcs1PrivateKey);

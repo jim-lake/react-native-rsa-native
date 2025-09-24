@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Change to script directory
+cd "$(dirname "$0")"
+
 # Start real-time logcat with line buffering
 adb logcat -c
 adb logcat -v time | grep --line-buffered -E "(System.out|TestRunner|ReactNativeJS|InstrumentationResultParser)" &
