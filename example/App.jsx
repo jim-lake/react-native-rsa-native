@@ -48,6 +48,22 @@ const signDemo = async () => {
     const keys = await RSA.generate();
     const signature = await RSA.sign(secret, keys.private);
     console.log('signature', signature);
+
+    // Validate signature format - RSA signatures are raw bytes, not ASN.1
+    try {
+      const sigData = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+      // RSA signatures should be exactly the key size in bytes (2048 bits = 256 bytes)
+      if (sigData.length === 256) {
+        console.log('Signature format valid (256 bytes for 2048-bit key)');
+      } else {
+        console.log(`Unexpected signature length: ${sigData.length} bytes`);
+        return false;
+      }
+    } catch (parseErr) {
+      console.log('Signature parsing failed:', parseErr);
+      return false;
+    }
+
     const valid = await RSA.verify(signature, secret, keys.public);
     console.log('verified', valid);
     if (!valid) return false;
@@ -78,6 +94,22 @@ const signAlgoDemo = async () => {
       RSA.SHA256withRSA,
     );
     console.log('signature', signature);
+
+    // Validate signature format - RSA signatures are raw bytes, not ASN.1
+    try {
+      const sigData = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+      // RSA signatures should be exactly the key size in bytes (2048 bits = 256 bytes)
+      if (sigData.length === 256) {
+        console.log('Signature format valid (256 bytes for 2048-bit key)');
+      } else {
+        console.log(`Unexpected signature length: ${sigData.length} bytes`);
+        return false;
+      }
+    } catch (parseErr) {
+      console.log('Signature parsing failed:', parseErr);
+      return false;
+    }
+
     const valid = await RSA.verifyWithAlgorithm(
       signature,
       secret,
@@ -220,6 +252,26 @@ const keychainDemo = async () => {
     console.log('message:', message);
     const signature = await RSAKeychain.sign(secret, RSA_TAG);
     console.log('signature', signature);
+
+    // Validate signature format - RSA signatures are raw bytes, not ASN.1
+    try {
+      const sigData = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+      // RSA signatures should be exactly the key size in bytes (2048 bits = 256 bytes)
+      if (sigData.length === 256) {
+        console.log(
+          'Keychain signature format valid (256 bytes for 2048-bit key)',
+        );
+      } else {
+        console.log(
+          `Unexpected keychain signature length: ${sigData.length} bytes`,
+        );
+        return false;
+      }
+    } catch (parseErr) {
+      console.log('Keychain signature parsing failed:', parseErr);
+      return false;
+    }
+
     const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
     console.log('verified', valid);
     if (!valid) {
@@ -266,6 +318,21 @@ const keychainECDemo = async () => {
       'SHA256withECDSA',
     );
     console.log('EC signature:', signature);
+
+    // Validate EC signature format
+    try {
+      const sigData = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+      // EC signatures are DER-encoded ASN.1 structures, typically 70-72 bytes for P-256
+      if (sigData.length >= 70 && sigData.length <= 72) {
+        console.log(`EC signature format valid (${sigData.length} bytes DER-encoded)`);
+      } else {
+        console.log(`Unexpected EC signature length: ${sigData.length} bytes`);
+        return false;
+      }
+    } catch (parseErr) {
+      console.log('EC signature parsing failed:', parseErr);
+      return false;
+    }
 
     const isValid = await RSAKeychain.verifyWithAlgorithm(
       signature,
@@ -324,6 +391,20 @@ const keychainEdDemo = async () => {
       'Ed signature: (converted from uint8 to b64):',
       uint8ArrayToBase64(signature),
     );
+
+    // Validate Ed25519 signature format
+    try {
+      // Ed25519 signatures are always exactly 64 bytes
+      if (signature.length === 64) {
+        console.log('Ed25519 signature format valid (64 bytes)');
+      } else {
+        console.log(`Unexpected Ed25519 signature length: ${signature.length} bytes`);
+        return false;
+      }
+    } catch (parseErr) {
+      console.log('Ed25519 signature parsing failed:', parseErr);
+      return false;
+    }
 
     // Test Ed25519 verification
     const isValid = await RSAKeychain.verifyEd(
