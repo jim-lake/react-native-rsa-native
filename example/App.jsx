@@ -464,11 +464,13 @@ const runTests = async setTestStatus => {
       const errorMsg = `Test failed: ${test.name}`;
       console.log(errorMsg);
       setTestStatus(`Failure: ${test.name}`);
+      console.log('ALL_TESTS_COMPLETED');
       return;
     }
     console.log(`Test passed: ${test.name}`);
   }
 
+  console.log('ALL_TESTS_COMPLETED');
   setTestStatus('Success');
 };
 
