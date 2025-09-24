@@ -608,11 +608,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA();
               boolean verified = rsa.verifyEd(signature, message, publicKey);
-              if (verified) {
-                promise.resolve(true);
-              } else {
-                promise.reject("verify failed", "error");
-              }
+              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
