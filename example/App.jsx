@@ -370,10 +370,13 @@ const publicKeyFormatsDemo = async () => {
     const publicKeyDefault = await RSAKeychain.getPublicKey(keyTag);
     const publicKeyDER = await RSAKeychain.getPublicKeyDER(keyTag);
     const publicKeyRSA = await RSAKeychain.getPublicKeyRSA(keyTag);
+    const allKeys = await RSAKeychain.getAllKeys();
+    const matchingKey = allKeys.find(key => key.tag === keyTag);
     
-    console.log('Default public key (first 50 chars):', publicKeyDefault.substring(0, 50));
+    console.log('Default public key (first 50 chars):', publicKeyDefault.public.substring(0, 50));
     console.log('DER public key (first 50 chars):', publicKeyDER.public.substring(0, 50));
     console.log('RSA public key (first 50 chars):', publicKeyRSA.public.substring(0, 50));
+    console.log('getAllKeys public key (first 50 chars):', matchingKey?.public?.substring(0, 50));
     
     // Extract n and e from each format
     const extractRSAParams = (pemKey) => {
@@ -411,9 +414,10 @@ const publicKeyFormatsDemo = async () => {
       }
     };
     
-    const defaultParams = extractRSAParams(publicKeyDefault);
+    const defaultParams = extractRSAParams(publicKeyDefault.public);
     const derParams = extractRSAParams(publicKeyDER.public);
     const rsaParams = extractRSAParams(publicKeyRSA.public);
+    const allKeysParams = extractRSAParams(matchingKey?.public);
     
     console.log('Default key n:', defaultParams?.n?.substring(0, 50) + '...');
     console.log('Default key e:', defaultParams?.e);
@@ -421,10 +425,12 @@ const publicKeyFormatsDemo = async () => {
     console.log('DER key e:', derParams?.e);
     console.log('RSA key n:', rsaParams?.n?.substring(0, 50) + '...');
     console.log('RSA key e:', rsaParams?.e);
+    console.log('getAllKeys key n:', allKeysParams?.n?.substring(0, 50) + '...');
+    console.log('getAllKeys key e:', allKeysParams?.e);
     
     // Compare n and e
-    const sameN = defaultParams?.n === derParams?.n && derParams?.n === rsaParams?.n;
-    const sameE = defaultParams?.e === derParams?.e && derParams?.e === rsaParams?.e;
+    const sameN = defaultParams?.n === derParams?.n && derParams?.n === rsaParams?.n && rsaParams?.n === allKeysParams?.n;
+    const sameE = defaultParams?.e === derParams?.e && derParams?.e === rsaParams?.e && rsaParams?.e === allKeysParams?.e;
     
     console.log('Same modulus (n):', sameN);
     console.log('Same exponent (e):', sameE);
