@@ -412,14 +412,31 @@ const publicKeyFormatsDemo = async () => {
     console.log('getAllKeys public key:', matchingKey.public);
 
     // Extract n and e from each format
-    const extractRSAParams = (pemKey, format = 'SPKI') => {
+    const extractRSAParams = (keyStr, format = 'SPKI') => {
       try {
-        // Clean PEM headers
-        const pemContent = pemKey
-          .replace(/-----BEGIN [^-]+-----/, '')
-          .replace(/-----END [^-]+-----/, '')
-          .replace(/\s/g, '');
-        const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+        let keyData;
+
+        if (format === 'RAW') {
+          // RAW must be pure base64 with no PEM headers
+          if (/-----/.test(keyStr)) {
+            console.error('RAW format cannot have PEM headers');
+            throw new Error('RAW key must be pure base64 PKCS#1 bytes');
+          }
+          keyData = Uint8Array.from(atob(keyStr.replace(/\s/g, '')), c =>
+            c.charCodeAt(0),
+          );
+        } else {
+          // SPKI or PKCS1 expects PEM
+          if (!/-----/.test(keyStr)) {
+            console.error(`${format} format requires PEM headers`);
+            throw new Error(`${format} key must include PEM headers`);
+          }
+          const pemContent = keyStr
+            .replace(/-----BEGIN [^-]+-----/, '')
+            .replace(/-----END [^-]+-----/, '')
+            .replace(/\s/g, '');
+          keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+        }
 
         const asn1 = fromBER(keyData.buffer);
         if (asn1.offset === -1) {
@@ -431,7 +448,6 @@ const publicKeyFormatsDemo = async () => {
 
         if (format === 'SPKI') {
           try {
-            // Expect X.509 / SPKI format
             const publicKeyInfo = new PublicKeyInfo({ schema: asn1.result });
             const keyAsn1 = fromBER(
               publicKeyInfo.subjectPublicKey.valueBlock.valueHex,
@@ -448,9 +464,8 @@ const publicKeyFormatsDemo = async () => {
             console.error('Key does not match SPKI format');
             throw new Error('Key does not match SPKI format');
           }
-        } else if (format === 'PKCS1') {
+        } else if (format === 'PKCS1' || format === 'RAW') {
           try {
-            // Expect PKCS#1 format (RSA PUBLIC KEY)
             const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
             const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
             nHex = Array.from(new Uint8Array(n))
@@ -460,24 +475,8 @@ const publicKeyFormatsDemo = async () => {
               .map(b => b.toString(16).padStart(2, '0'))
               .join('');
           } catch {
-            console.error('Key does not match PKCS#1 format');
-            throw new Error('Key does not match PKCS#1 format');
-          }
-        } else if (format === 'RAW') {
-          try {
-            // RAW PKCS#1 without any PEM headers/wrappers
-            // Expect only SEQUENCE { modulus, exponent }
-            const n = asn1.result.valueBlock.value[0].valueBlock.valueHex;
-            const e = asn1.result.valueBlock.value[1].valueBlock.valueHex;
-            nHex = Array.from(new Uint8Array(n))
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join('');
-            eHex = Array.from(new Uint8Array(e))
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join('');
-          } catch {
-            console.error('Key does not match RAW PKCS#1 format');
-            throw new Error('Key does not match RAW PKCS#1 format');
+            console.error(`Key does not match ${format} PKCS#1 format`);
+            throw new Error(`Key does not match ${format} PKCS#1 format`);
           }
         } else {
           throw new Error(`Unsupported format: ${format}`);
