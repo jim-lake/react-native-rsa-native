@@ -7,6 +7,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -289,13 +290,13 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         new Runnable() {
           @Override
           public void run() {
-            WritableNativeMap keys = new WritableNativeMap();
-
             try {
               RSA rsa = new RSA(keyTag);
               String publicKey = rsa.getPublicKey();
               if (publicKey != null) {
-                promise.resolve(publicKey);
+                WritableNativeMap result = new WritableNativeMap();
+                result.putString("public", publicKey);
+                promise.resolve(result);
               } else {
                 promise.reject("Error", "Missing public key for that keyTag");
               }
@@ -377,11 +378,27 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                     keyInfo.putString("class", "Private");
                     keyInfo.putString("type", privateKey.getAlgorithm());
                     keyInfo.putInt("size", getKeySize(privateKey));
-                    keyInfo.putString(
-                        "public",
-                        android.util.Base64.encodeToString(
-                                publicKey.getEncoded(), android.util.Base64.DEFAULT)
-                            .trim());
+                    
+                    // Format public key as raw base64 PKCS#1 format to match iOS behavior
+                    String formattedPublicKey;
+                    if (publicKey.getAlgorithm().equals("RSA")) {
+                      // For RSA keys, extract PKCS#1 from X.509 DER format
+                      try {
+                        byte[] pkcs1PublicKey = convertPublicKeyToPkcs1(publicKey);
+                        formattedPublicKey = android.util.Base64.encodeToString(
+                            pkcs1PublicKey, android.util.Base64.NO_WRAP);
+                      } catch (Exception e) {
+                        // Fallback to X.509 format
+                        formattedPublicKey = android.util.Base64.encodeToString(
+                            publicKey.getEncoded(), android.util.Base64.NO_WRAP);
+                      }
+                    } else {
+                      // For EC and other keys, use X.509 format
+                      formattedPublicKey = android.util.Base64.encodeToString(
+                          publicKey.getEncoded(), android.util.Base64.NO_WRAP);
+                    }
+                    
+                    keyInfo.putString("public", formattedPublicKey);
                     keyInfo.putBoolean(
                         "extractable", false); // Android KeyStore keys are non-extractable
                     keyInfo.putString("tag", alias);
@@ -402,6 +419,34 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             }
           }
         });
+  }
+
+  private byte[] convertPublicKeyToPkcs1(PublicKey publicKey) throws IOException {
+    try {
+      // Use reflection to access the private method from RSA class
+      Class<?> rsaClass = RSA.class;
+      java.lang.reflect.Method method = rsaClass.getDeclaredMethod("publicKeyToPkcs1", PublicKey.class);
+      method.setAccessible(true);
+      RSA rsa = new RSA();
+      return (byte[]) method.invoke(rsa, publicKey);
+    } catch (Exception e) {
+      throw new IOException("Failed to convert public key to PKCS#1", e);
+    }
+  }
+
+  private String convertToPem(String header, byte[] data) {
+    try {
+      // Use reflection to access the private method from RSA class
+      Class<?> rsaClass = RSA.class;
+      java.lang.reflect.Method method = rsaClass.getDeclaredMethod("dataToPem", String.class, byte[].class);
+      method.setAccessible(true);
+      RSA rsa = new RSA();
+      return (String) method.invoke(rsa, header, data);
+    } catch (Exception e) {
+      // Fallback to manual PEM formatting
+      String base64 = android.util.Base64.encodeToString(data, android.util.Base64.DEFAULT);
+      return "-----BEGIN " + header + "-----\n" + base64 + "-----END " + header + "-----\n";
+    }
   }
 
   private int getKeySize(PrivateKey key) {
