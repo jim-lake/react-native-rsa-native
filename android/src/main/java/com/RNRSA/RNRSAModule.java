@@ -220,7 +220,11 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           RSA rsa = new RSA();
           rsa.setPublicKey(publicKeyString);
           boolean verified = rsa.verify(signature, message, SHA512withRSA);
-          promise.resolve(verified);
+          if (verified) {
+            promise.resolve(true);
+          } else {
+            promise.reject("verify failed", "error");
+          }
 
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());
@@ -239,7 +243,11 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           RSA rsa = new RSA();
           rsa.setPublicKey(publicKeyString);
           boolean verified = rsa.verify(signature, message, algorithm);
-          promise.resolve(verified);
+          if (verified) {
+            promise.resolve(true);
+          } else {
+            promise.reject("verify failed", "error");
+          }
 
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());
@@ -258,7 +266,11 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           RSA rsa = new RSA();
           rsa.setPublicKey(publicKeyString);
           boolean verified = rsa.verify64(signature, message, SHA512withRSA);
-          promise.resolve(verified);
+          if (verified) {
+            promise.resolve(true);
+          } else {
+            promise.reject("verify failed", "error");
+          }
 
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());
@@ -277,7 +289,11 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           RSA rsa = new RSA();
           rsa.setPublicKey(publicKeyString);
           boolean verified = rsa.verify64(signature, message, algorithm);
-          promise.resolve(verified);
+          if (verified) {
+            promise.resolve(true);
+          } else {
+            promise.reject("verify failed", "error");
+          }
 
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());

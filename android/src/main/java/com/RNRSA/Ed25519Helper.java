@@ -79,7 +79,10 @@ public class Ed25519Helper {
         byte[] messageBytes = Base64.decode(message, Base64.NO_WRAP);
         byte[] signature = Ed25519.sign(messageBytes, privateKey);
         
-        return Base64.encodeToString(signature, Base64.NO_WRAP);
+        String result = Base64.encodeToString(signature, Base64.NO_WRAP);
+        android.util.Log.d("Ed25519Helper", "Signature bytes length: " + signature.length);
+        android.util.Log.d("Ed25519Helper", "Signature base64: " + result);
+        return result;
     }
     
     public static boolean verify(String signature, String message, String publicKey) throws Exception {

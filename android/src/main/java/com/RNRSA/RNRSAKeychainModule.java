@@ -49,7 +49,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
     this.generateKeys(keyTag, 2048, false, null, promise);
   }
 
-  @ReactMethod
   public void generateKeys(final String keyTag, final int keySize, final Promise promise) {
     this.generateKeys(keyTag, keySize, false, null, promise);
   }
@@ -83,7 +82,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         });
   }
 
-  @ReactMethod
   public void generateEC(final String keyTag, final Promise promise) {
     this.generateEC(keyTag, false, null, promise);
   }
@@ -116,7 +114,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         });
   }
 
-  @ReactMethod
   public void generateEd(final String keyTag, final Promise promise) {
     this.generateEd(keyTag, false, null, promise);
   }
@@ -138,7 +135,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA();
               rsa.generateEd(keyTag, synchronizable, label, reactContext);
-              keys.putString("public", rsa.getPublicKey());
+              keys.putString("public", rsa.getPublicKeyEd(keyTag, reactContext));
               promise.resolve(keys);
             } catch (NoSuchAlgorithmException e) {
               promise.reject("Error", e.getMessage());
@@ -375,7 +372,11 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify(signature, message, SHA512withRSA);
-              promise.resolve(verified);
+              if (verified) {
+                promise.resolve(true);
+              } else {
+                promise.reject("verify failed", "error");
+              }
 
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
@@ -398,7 +399,11 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify(signature, message, algorithm);
-              promise.resolve(verified);
+              if (verified) {
+                promise.resolve(true);
+              } else {
+                promise.reject("verify failed", "error");
+              }
 
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
@@ -417,7 +422,11 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify64(signature, message, SHA512withRSA);
-              promise.resolve(verified);
+              if (verified) {
+                promise.resolve(true);
+              } else {
+                promise.reject("verify failed", "error");
+              }
 
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
@@ -440,7 +449,11 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify64(signature, message, algorithm);
-              promise.resolve(verified);
+              if (verified) {
+                promise.resolve(true);
+              } else {
+                promise.reject("verify failed", "error");
+              }
 
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
@@ -595,7 +608,11 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA();
               boolean verified = rsa.verifyEd(signature, message, publicKey);
-              promise.resolve(verified);
+              if (verified) {
+                promise.resolve(true);
+              } else {
+                promise.reject("verify failed", "error");
+              }
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }

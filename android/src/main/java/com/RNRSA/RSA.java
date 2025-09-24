@@ -106,9 +106,21 @@ public class RSA {
     }
 
     public String getPublicKey() throws IOException {
-       byte[] pkcs1PublicKey = publicKeyToPkcs1(this.publicKey);
-       return dataToPem(PUBLIC_HEADER, pkcs1PublicKey);
-        // return Base64.encodeToString(this.publicKey.getEncoded(), Base64.DEFAULT);
+        if (this.publicKey == null) {
+            // This might be an Ed25519 key, which is handled separately
+            throw new IOException("Public key is null - this might be an Ed25519 key which should use getPublicKeyEd()");
+        }
+        
+        if (this.publicKey.getAlgorithm().equals("RSA")) {
+            byte[] pkcs1PublicKey = publicKeyToPkcs1(this.publicKey);
+            return dataToPem(PUBLIC_HEADER, pkcs1PublicKey);
+        } else if (this.publicKey.getAlgorithm().equals("EC")) {
+            // For EC keys, return the standard X.509 format encoded as base64
+            return Base64.encodeToString(this.publicKey.getEncoded(), Base64.DEFAULT);
+        } else {
+            // Fallback for other key types
+            return Base64.encodeToString(this.publicKey.getEncoded(), Base64.DEFAULT);
+        }
     }
 
     public String getPrivateKey() throws IOException {
