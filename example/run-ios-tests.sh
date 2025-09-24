@@ -5,22 +5,31 @@ cd "$(dirname "$0")"
 
 echo "Running iOS tests on iPhone 16 simulator..."
 
-# Kill any existing Metro/React Native processes
-pkill -f "react-native start" 2>/dev/null || true
-pkill -f "metro" 2>/dev/null || true
-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
-sleep 2
+# Check if Metro is already running on port 8081
+if lsof -ti:8081 > /dev/null 2>&1; then
+    echo "Metro is already running on port 8081, using existing instance"
+    METRO_PID=""
+else
+    echo "Starting new Metro instance"
+    METRO_PID=""
+fi
 
 # Create temp files in TMPDIR
 METRO_LOG="$TMPDIR/metro.log"
 BUILD_LOG="$TMPDIR/build.log"
 
-# Start Metro bundler with client logs and capture output
-npm run start -- --client-logs > "$METRO_LOG" 2>&1 &
-METRO_PID=$!
-
-# Wait for Metro to start
-sleep 10
+# Start Metro bundler only if not already running
+if [ -z "$METRO_PID" ] && ! lsof -ti:8081 > /dev/null 2>&1; then
+    npm run start -- --client-logs > "$METRO_LOG" 2>&1 &
+    METRO_PID=$!
+    echo "Started new Metro instance with PID: $METRO_PID"
+    sleep 10
+else
+    echo "Using existing Metro instance"
+    # Create empty log file for consistency
+    touch "$METRO_LOG"
+    sleep 2
+fi
 
 # Build and run the app, capture build output
 echo "Building and launching app..."
@@ -54,16 +63,19 @@ while true; do
     sleep 2
 done
 
-# Stop all processes
+# Stop processes we started
 kill $TAIL_PID 2>/dev/null
-kill $METRO_PID 2>/dev/null
+
+# Only kill Metro if we started it
+if [ ! -z "$METRO_PID" ]; then
+    echo "Stopping Metro instance we started..."
+    kill $METRO_PID 2>/dev/null
+fi
 
 # Terminate the app
 xcrun simctl terminate booted org.reactjs.native.example.example 2>/dev/null
 
-# Final cleanup
-pkill -f "react-native start" 2>/dev/null || true
-pkill -f "metro" 2>/dev/null || true
+# Clean up temp files
 rm -f "$METRO_LOG" "$BUILD_LOG"
 
 echo "iOS tests completed"
