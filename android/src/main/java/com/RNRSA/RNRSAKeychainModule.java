@@ -372,12 +372,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify(signature, message, SHA512withRSA);
-              if (verified) {
-                promise.resolve(true);
-              } else {
-                promise.reject("verify failed", "error");
-              }
-
+              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
@@ -399,12 +394,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify(signature, message, algorithm);
-              if (verified) {
-                promise.resolve(true);
-              } else {
-                promise.reject("verify failed", "error");
-              }
-
+              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
@@ -422,12 +412,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify64(signature, message, SHA512withRSA);
-              if (verified) {
-                promise.resolve(true);
-              } else {
-                promise.reject("verify failed", "error");
-              }
-
+              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
@@ -449,12 +434,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA(keyTag);
               boolean verified = rsa.verify64(signature, message, algorithm);
-              if (verified) {
-                promise.resolve(true);
-              } else {
-                promise.reject("verify failed", "error");
-              }
-
+              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
