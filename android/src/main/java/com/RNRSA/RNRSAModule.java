@@ -20,6 +20,10 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
 
   private static final String SHA256withRSA = "SHA256withRSA";
   private static final String SHA512withRSA = "SHA512withRSA";
+  private static final String SHA1withRSA = "SHA1withRSA";
+  private static final String SHA256withECDSA = "SHA256withECDSA";
+  private static final String SHA512withECDSA = "SHA512withECDSA";
+  private static final String SHA1withECDSA = "SHA1withECDSA";
 
   private final ReactApplicationContext reactContext;
 
@@ -38,12 +42,11 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
     final Map<String, Object> constants = new HashMap<>();
     constants.put(SHA256withRSA, SHA256withRSA);
     constants.put(SHA512withRSA, SHA512withRSA);
+    constants.put(SHA1withRSA, SHA1withRSA);
+    constants.put(SHA256withECDSA, SHA256withECDSA);
+    constants.put(SHA512withECDSA, SHA512withECDSA);
+    constants.put(SHA1withECDSA, SHA1withECDSA);
     return constants;
-  }
-
-  @ReactMethod
-  public void generate(final Promise promise) {
-    this.generateKeys(2048, promise);
   }
 
   @ReactMethod
@@ -69,23 +72,6 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void encrypt(final String message, final String publicKeyString, final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPublicKey(publicKeyString);
-          String encodedMessage = rsa.encrypt(message);
-          promise.resolve(encodedMessage);
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
   public void encrypt64(final String message, final String publicKeyString, final Promise promise) {
     AsyncTask.execute(new Runnable() {
       @Override
@@ -95,24 +81,6 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           rsa.setPublicKey(publicKeyString);
           String encodedMessage = rsa.encrypt64(message);
           promise.resolve(encodedMessage);
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void decrypt(final String encodedMessage, final String privateKeyString, final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPrivateKey(privateKeyString);
-          String message = rsa.decrypt(encodedMessage);
-          promise.resolve(message);
-
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());
         }
@@ -139,60 +107,6 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void sign(final String message, final String privateKeyString, final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPrivateKey(privateKeyString);
-          String signature = rsa.sign(message, SHA512withRSA);
-          promise.resolve(signature);
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void signWithAlgorithm(final String message, final String privateKeyString, final String algorithm, final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPrivateKey(privateKeyString);
-          String signature = rsa.sign(message, algorithm);
-          promise.resolve(signature);
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void sign64(final String message, final String privateKeyString, final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPrivateKey(privateKeyString);
-          String signature = rsa.sign64(message, SHA512withRSA);
-          promise.resolve(signature);
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
   public void sign64WithAlgorithm(final String message, final String privateKeyString, final String algorithm, final Promise promise) {
     AsyncTask.execute(new Runnable() {
       @Override
@@ -202,75 +116,6 @@ public class RNRSAModule extends ReactContextBaseJavaModule {
           rsa.setPrivateKey(privateKeyString);
           String signature = rsa.sign64(message, algorithm);
           promise.resolve(signature);
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void verify(final String signature, final String message, final String publicKeyString,
-      final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPublicKey(publicKeyString);
-          boolean verified = rsa.verify(signature, message, SHA512withRSA);
-          if (verified) {
-            promise.resolve(true);
-          } else {
-            promise.reject("verify failed", "error");
-          }
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void verifyWithAlgorithm(final String signature, final String message, final String publicKeyString, final String algorithm,
-      final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPublicKey(publicKeyString);
-          boolean verified = rsa.verify(signature, message, algorithm);
-          if (verified) {
-            promise.resolve(true);
-          } else {
-            promise.reject("verify failed", "error");
-          }
-
-        } catch (Exception e) {
-          promise.reject("Error", e.getMessage());
-        }
-      }
-    });
-  }
-
-  @ReactMethod
-  public void verify64(final String signature, final String message, final String publicKeyString,
-      final Promise promise) {
-    AsyncTask.execute(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          RSA rsa = new RSA();
-          rsa.setPublicKey(publicKeyString);
-          boolean verified = rsa.verify64(signature, message, SHA512withRSA);
-          if (verified) {
-            promise.resolve(true);
-          } else {
-            promise.reject("verify failed", "error");
-          }
 
         } catch (Exception e) {
           promise.reject("Error", e.getMessage());

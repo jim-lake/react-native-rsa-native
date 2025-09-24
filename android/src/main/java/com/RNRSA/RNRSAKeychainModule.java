@@ -22,6 +22,9 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
   private static final String SHA256withRSA = "SHA256withRSA";
   private static final String SHA512withRSA = "SHA512withRSA";
   private static final String SHA1withRSA = "SHA1withRSA";
+  private static final String SHA256withECDSA = "SHA256withECDSA";
+  private static final String SHA512withECDSA = "SHA512withECDSA";
+  private static final String SHA1withECDSA = "SHA1withECDSA";
 
   private final ReactApplicationContext reactContext;
 
@@ -41,16 +44,10 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
     constants.put(SHA256withRSA, SHA256withRSA);
     constants.put(SHA512withRSA, SHA512withRSA);
     constants.put(SHA1withRSA, SHA1withRSA);
+    constants.put(SHA256withECDSA, SHA256withECDSA);
+    constants.put(SHA512withECDSA, SHA512withECDSA);
+    constants.put(SHA1withECDSA, SHA1withECDSA);
     return constants;
-  }
-
-  @ReactMethod
-  public void generate(final String keyTag, final Promise promise) {
-    this.generateKeys(keyTag, 2048, false, null, promise);
-  }
-
-  public void generateKeys(final String keyTag, final int keySize, final Promise promise) {
-    this.generateKeys(keyTag, keySize, false, null, promise);
   }
 
   @ReactMethod
@@ -82,10 +79,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
         });
   }
 
-  public void generateEC(final String keyTag, final Promise promise) {
-    this.generateEC(keyTag, false, null, promise);
-  }
-
   @ReactMethod
   public void generateEC(
       final String keyTag,
@@ -112,10 +105,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             }
           }
         });
-  }
-
-  public void generateEd(final String keyTag, final Promise promise) {
-    this.generateEd(keyTag, false, null, promise);
   }
 
   @ReactMethod
@@ -219,23 +208,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void encrypt(final String message, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              String encodedMessage = rsa.encrypt(message);
-              promise.resolve(encodedMessage);
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
   public void encrypt64(final String message, final String keyTag, final Promise promise) {
     AsyncTask.execute(
         new Runnable() {
@@ -245,24 +217,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
               RSA rsa = new RSA(keyTag);
               String encodedMessage = rsa.encrypt64(message);
               promise.resolve(encodedMessage);
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void decrypt(final String encodedMessage, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              String message = rsa.decrypt(encodedMessage);
-              promise.resolve(message);
-
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
@@ -289,61 +243,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void sign(final String message, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              String signature = rsa.sign(message, SHA512withRSA);
-              promise.resolve(signature);
-
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void signWithAlgorithm(
-      final String message, final String keyTag, final String algorithm, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              String signature = rsa.sign(message, algorithm);
-              promise.resolve(signature);
-
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void sign64(final String message, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              String signature = rsa.sign64(message, SHA512withRSA);
-              promise.resolve(signature);
-
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
   public void sign64WithAlgorithm(
       final String message, final String keyTag, final String algorithm, final Promise promise) {
     AsyncTask.execute(
@@ -355,64 +254,6 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
               String signature = rsa.sign64(message, algorithm);
               promise.resolve(signature);
 
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void verify(
-      final String signature, final String message, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              boolean verified = rsa.verify(signature, message, SHA512withRSA);
-              promise.resolve(verified);
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void verifyWithAlgorithm(
-      final String signature,
-      final String message,
-      final String keyTag,
-      final String algorithm,
-      final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              boolean verified = rsa.verify(signature, message, algorithm);
-              promise.resolve(verified);
-            } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
-            }
-          }
-        });
-  }
-
-  @ReactMethod
-  public void verify64(
-      final String signature, final String message, final String keyTag, final Promise promise) {
-    AsyncTask.execute(
-        new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RSA rsa = new RSA(keyTag);
-              boolean verified = rsa.verify64(signature, message, SHA512withRSA);
-              promise.resolve(verified);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
@@ -455,6 +296,56 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
               String publicKey = rsa.getPublicKey();
               if (publicKey != null) {
                 promise.resolve(publicKey);
+              } else {
+                promise.reject("Error", "Missing public key for that keyTag");
+              }
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
+
+  @ReactMethod
+  public void getPublicKeyDER(final String keyTag, final Promise promise) {
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            WritableNativeMap keys = new WritableNativeMap();
+
+            try {
+              RSA rsa = new RSA(keyTag);
+              String publicKey = rsa.getPublicKey();
+              if (publicKey != null) {
+                WritableNativeMap result = new WritableNativeMap();
+                result.putString("public", publicKey);
+                promise.resolve(result);
+              } else {
+                promise.reject("Error", "Missing public key for that keyTag");
+              }
+            } catch (Exception e) {
+              promise.reject("Error", e.getMessage());
+            }
+          }
+        });
+  }
+
+  @ReactMethod
+  public void getPublicKeyRSA(final String keyTag, final Promise promise) {
+    AsyncTask.execute(
+        new Runnable() {
+          @Override
+          public void run() {
+            WritableNativeMap keys = new WritableNativeMap();
+
+            try {
+              RSA rsa = new RSA(keyTag);
+              String publicKey = rsa.getPublicKey();
+              if (publicKey != null) {
+                WritableNativeMap result = new WritableNativeMap();
+                result.putString("public", publicKey);
+                promise.resolve(result);
               } else {
                 promise.reject("Error", "Missing public key for that keyTag");
               }
