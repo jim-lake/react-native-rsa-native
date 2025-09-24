@@ -2,16 +2,16 @@ package com.RNRSA;
 
 import android.util.Log;
 
-import org.spongycastle.asn1.ASN1ObjectIdentifier;
-import org.spongycastle.asn1.pkcs.PKCSObjectIdentifiers;
-import org.spongycastle.asn1.x500.X500Name;
-import org.spongycastle.asn1.x509.AlgorithmIdentifier;
-import org.spongycastle.asn1.x509.ExtensionsGenerator;
-import org.spongycastle.operator.ContentSigner;
-import org.spongycastle.operator.OperatorCreationException;
-import org.spongycastle.pkcs.PKCS10CertificationRequest;
-import org.spongycastle.pkcs.PKCS10CertificationRequestBuilder;
-import org.spongycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.ExtensionsGenerator;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCS10CertificationRequestBuilder;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -93,6 +93,8 @@ public class Ed25519Helper {
         return Ed25519.verify(signatureBytes, messageBytes, publicKeyBytes);
     }
     
+
+    
     public static boolean deleteKey(String keyTag, Context context) throws Exception {
         SharedPreferences keysPrefs = getKeysPrefs(context);
         SharedPreferences labelsPrefs = getLabelsPrefs(context);
