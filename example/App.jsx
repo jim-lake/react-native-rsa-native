@@ -319,16 +319,27 @@ const keychainECDemo = async () => {
     );
     console.log('EC signature:', signature);
 
-    // Validate EC signature format
+    // Validate EC signature format - must be exactly DER-encoded ASN.1
     try {
       const sigData = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
-      // EC signatures are DER-encoded ASN.1 structures, typically 70-72 bytes for P-256
-      if (sigData.length >= 70 && sigData.length <= 72) {
-        console.log(`EC signature format valid (${sigData.length} bytes DER-encoded)`);
-      } else {
-        console.log(`Unexpected EC signature length: ${sigData.length} bytes`);
+      // DER-encoded ECDSA signature: SEQUENCE { INTEGER r, INTEGER s }
+      // Must start with 0x30 (SEQUENCE tag)
+      if (sigData[0] !== 0x30) {
+        console.log('EC signature must start with DER SEQUENCE tag (0x30)');
         return false;
       }
+      // Length must be exactly what DER specifies (no padding, no truncation)
+      const derLength = sigData[1];
+      if (sigData.length !== derLength + 2) {
+        console.log(`EC signature DER length mismatch: expected ${derLength + 2}, got ${sigData.length}`);
+        return false;
+      }
+      // For P-256, typical range is 70-72 bytes, but must be exact DER
+      if (sigData.length < 70 || sigData.length > 72) {
+        console.log(`EC signature length ${sigData.length} outside valid P-256 DER range (70-72)`);
+        return false;
+      }
+      console.log(`EC signature format valid (${sigData.length} bytes DER-encoded)`);
     } catch (parseErr) {
       console.log('EC signature parsing failed:', parseErr);
       return false;
@@ -392,15 +403,19 @@ const keychainEdDemo = async () => {
       uint8ArrayToBase64(signature),
     );
 
-    // Validate Ed25519 signature format
+    // Validate Ed25519 signature format - must be exactly 64 bytes, no exceptions
     try {
-      // Ed25519 signatures are always exactly 64 bytes
-      if (signature.length === 64) {
-        console.log('Ed25519 signature format valid (64 bytes)');
-      } else {
-        console.log(`Unexpected Ed25519 signature length: ${signature.length} bytes`);
+      // Ed25519 signatures are always exactly 64 bytes (512 bits)
+      if (signature.length !== 64) {
+        console.log(`Ed25519 signature must be exactly 64 bytes, got ${signature.length} bytes`);
         return false;
       }
+      // Verify it's a Uint8Array (not base64 string or other format)
+      if (!(signature instanceof Uint8Array)) {
+        console.log('Ed25519 signature must be Uint8Array format');
+        return false;
+      }
+      console.log('Ed25519 signature format valid (64 bytes)');
     } catch (parseErr) {
       console.log('Ed25519 signature parsing failed:', parseErr);
       return false;
