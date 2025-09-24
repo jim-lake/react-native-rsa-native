@@ -220,17 +220,16 @@ const keychainDemo = async () => {
     console.log('signature', signature);
     const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
     console.log('verified', valid);
-
-    // Test negative verification for RSA
-    try {
-      await RSAKeychain.verify(signature, 'wrong message', RSA_TAG);
-      console.log('ERROR: RSA verify should have failed');
+    if (!valid) {
       return false;
-    } catch (err) {
-      console.log('RSA verify fails correctly:', err.code);
     }
 
-    // Test getAllKeys to verify the label and synchronizable are set correctly
+    const invalid = await RSAKeychain.verify(signature, 'wrong message', RSA_TAG);
+    console.log('invalid:', invalid);
+    if (invalid) {
+      return false;
+    }
+
     const allKeys = await RSAKeychain.getAllKeys();
     console.log('All keys:', allKeys);
 
@@ -261,15 +260,14 @@ const keychainECDemo = async () => {
     const isValid = await RSAKeychain.verifyWithAlgorithm(signature, message, EC_TAG, 'SHA256withECDSA');
     console.log('EC signature valid:', isValid);
     
-    if (!isValid) return false;
-
-    // Test negative verification for EC
-    try {
-      await RSAKeychain.verifyWithAlgorithm(signature, 'wrong message', EC_TAG, 'SHA256withECDSA');
-      console.log('ERROR: EC verify should have failed');
+    if (!isValid) {
       return false;
-    } catch (err) {
-      console.log('EC verify fails correctly:', err.code);
+    }
+    // Test negative verification for EC
+    const bad_is_valid = await RSAKeychain.verifyWithAlgorithm(signature, 'wrong message', EC_TAG, 'SHA256withECDSA');
+    console.log('Wrong message verify:', bad_is_valid);
+    if (bad_is_valid) {
+      return false;
     }
 
     // Test getAllKeys to verify the EC key
