@@ -69,7 +69,9 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
             try {
               RSA rsa = new RSA();
               rsa.generate(keyTag, keySize, synchronizable, label, reactContext);
-              keys.putString("public", rsa.getPublicKey());
+              
+              // Return raw base64 PKCS#1 format to match getAllKeys behavior
+              keys.putString("public", rsa.getRawPublicKey());
               promise.resolve(keys);
             } catch (NoSuchAlgorithmException e) {
               promise.reject("Error", e.getMessage());
@@ -128,9 +130,10 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
               keys.putString("public", rsa.getPublicKeyEd(keyTag, reactContext));
               promise.resolve(keys);
             } catch (NoSuchAlgorithmException e) {
-              promise.reject("Error", e.getMessage());
+              promise.reject("NoSuchAlgorithmException", e.getMessage() != null ? e.getMessage() : "No algorithm error");
             } catch (Exception e) {
-              promise.reject("Error", e.getMessage());
+              String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+              promise.reject("GenerateEdError", "generateEd failed: " + errorMsg);
             }
           }
         });
@@ -382,9 +385,10 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                     // Format public key to match the format returned by generate methods
                     String formattedPublicKey;
                     if (publicKey.getAlgorithm().equals("RSA")) {
-                      // For RSA keys, extract PKCS#1 from X.509 DER format
+                      // For RSA keys, extract PKCS#1 from X.509 DER format and return as raw base64
                       try {
-                        byte[] pkcs1PublicKey = convertPublicKeyToPkcs1(publicKey);
+                        RSA rsa = new RSA();
+                        byte[] pkcs1PublicKey = rsa.publicKeyToPkcs1(publicKey);
                         formattedPublicKey = android.util.Base64.encodeToString(
                             pkcs1PublicKey, android.util.Base64.NO_WRAP);
                       } catch (Exception e) {
@@ -431,6 +435,7 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
                   keyInfo.putString("type", "Ed25519");
                   keyInfo.putInt("size", 256); // Ed25519 is 256-bit
                   keyInfo.putString("public", entry.getValue());
+                  keyInfo.putString("publicEd25519", entry.getValue()); // Add publicEd25519 property
                   keyInfo.putBoolean("extractable", false);
                   keyInfo.putString("tag", entry.getKey());
                   keyInfo.putString("label", "");
@@ -534,10 +539,42 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
           @Override
           public void run() {
             try {
-              // Android KeyStore doesn't provide a direct way to delete all keys
-              // This would require maintaining a registry of key tags and deleting each one
-              // For now, we'll just return true
-              promise.resolve(true);
+              int deletedCount = 0;
+              
+              // Delete all keys from Android KeyStore
+              try {
+                KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+                keyStore.load(null);
+                
+                // Collect aliases first to avoid concurrent modification
+                java.util.List<String> aliases = new java.util.ArrayList<>();
+                Enumeration<String> aliasEnum = keyStore.aliases();
+                while (aliasEnum.hasMoreElements()) {
+                  aliases.add(aliasEnum.nextElement());
+                }
+                
+                // Delete each key
+                for (String alias : aliases) {
+                  try {
+                    keyStore.deleteEntry(alias);
+                    deletedCount++;
+                  } catch (Exception e) {
+                    // Skip keys that can't be deleted, continue with others
+                  }
+                }
+              } catch (Exception e) {
+                // If KeyStore operations fail, continue with Ed25519 cleanup
+              }
+              
+              // Delete all Ed25519 keys from SharedPreferences
+              try {
+                int ed25519Deleted = Ed25519Helper.deleteAllKeys(reactContext);
+                deletedCount += ed25519Deleted;
+              } catch (Exception e) {
+                // Skip if there's an error with Ed25519 cleanup
+              }
+              
+              promise.resolve(deletedCount);
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }

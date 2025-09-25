@@ -17,28 +17,52 @@ public class Ed25519Helper {
         MasterKey masterKey = new MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build();
-            
-        return EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        );
+        
+        try {
+            return EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception e) {
+            // Handle corruption by clearing and recreating
+            context.deleteSharedPreferences(PREFS_NAME);
+            return EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        }
     }
     
     private static SharedPreferences getLabelsPrefs(Context context) throws GeneralSecurityException, IOException {
         MasterKey masterKey = new MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build();
-            
-        return EncryptedSharedPreferences.create(
-            context,
-            LABELS_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        );
+        
+        try {
+            return EncryptedSharedPreferences.create(
+                context,
+                LABELS_PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception e) {
+            // Handle corruption by clearing and recreating
+            context.deleteSharedPreferences(LABELS_PREFS_NAME);
+            return EncryptedSharedPreferences.create(
+                context,
+                LABELS_PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        }
     }
     
     public static String generateEd25519KeyPair(String keyTag, String label, Context context) throws Exception {
@@ -122,6 +146,37 @@ public class Ed25519Helper {
         labelsPrefs.edit().remove(keyTag).apply();
         
         return true;
+    }
+    
+    public static int deleteAllKeys(Context context) throws Exception {
+        SharedPreferences keysPrefs = getKeysPrefs(context);
+        SharedPreferences labelsPrefs = getLabelsPrefs(context);
+        
+        java.util.Map<String, ?> allKeys = keysPrefs.getAll();
+        java.util.Set<String> keyTags = new java.util.HashSet<>();
+        
+        // Collect unique key tags (each key has _private and _public entries)
+        for (String key : allKeys.keySet()) {
+            if (key.endsWith("_public")) {
+                String keyTag = key.substring(0, key.length() - "_public".length());
+                keyTags.add(keyTag);
+            }
+        }
+        
+        // Delete each key individually to avoid corrupting EncryptedSharedPreferences
+        SharedPreferences.Editor keysEditor = keysPrefs.edit();
+        SharedPreferences.Editor labelsEditor = labelsPrefs.edit();
+        
+        for (String keyTag : keyTags) {
+            keysEditor.remove(keyTag + "_private");
+            keysEditor.remove(keyTag + "_public");
+            labelsEditor.remove(keyTag);
+        }
+        
+        keysEditor.apply();
+        labelsEditor.apply();
+        
+        return keyTags.size();
     }
     
     public static boolean updateLabel(String keyTag, String label, Context context) throws Exception {

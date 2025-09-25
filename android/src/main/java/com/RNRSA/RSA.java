@@ -123,6 +123,20 @@ public class RSA {
         }
     }
 
+    public String getRawPublicKey() throws IOException {
+        if (this.publicKey == null) {
+            throw new IOException("Public key is null");
+        }
+        
+        if (this.publicKey.getAlgorithm().equals("RSA")) {
+            byte[] pkcs1PublicKey = publicKeyToPkcs1(this.publicKey);
+            return Base64.encodeToString(pkcs1PublicKey, Base64.NO_WRAP);
+        } else {
+            // For non-RSA keys, fall back to getPublicKey behavior
+            return getPublicKey();
+        }
+    }
+
     private String extractECPublicKeyRaw(PublicKey publicKey) throws IOException {
         try {
             // Get the DER-encoded public key
@@ -172,6 +186,10 @@ public class RSA {
 
     public void setPublicKey(String publicKey) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         this.publicKey = pkcs1ToPublicKey(publicKey);
+    }
+
+    public void setPublicKeyFromKeyStore(PublicKey publicKey) {
+        this.publicKey = publicKey;
     }
 
     public void setPrivateKey(String privateKey) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -312,7 +330,7 @@ public class RSA {
         return keyFactory.generatePrivate(keySpec);
     }
 
-    private byte[] publicKeyToPkcs1(PublicKey publicKey) throws IOException {
+    public byte[] publicKeyToPkcs1(PublicKey publicKey) throws IOException {
         SubjectPublicKeyInfo spkInfo = SubjectPublicKeyInfo.getInstance(publicKey.getEncoded());
         ASN1Primitive primitive = spkInfo.parsePublicKey();
         return primitive.getEncoded();
