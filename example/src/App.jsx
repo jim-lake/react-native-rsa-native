@@ -13,6 +13,8 @@ import keychainEdDemo from './keychainEdDemo';
 import getAllKeysDemo from './getAllKeysDemo';
 import updatePrivateKeyDemo from './updatePrivateKeyDemo';
 import publicKeyFormatsDemo from './publicKeyFormatsDemo';
+import deleteAllKeysDemo from './deleteAllKeysDemo';
+import deleteIndividualKeysDemo from './deleteIndividualKeysDemo';
 
 const runTests = async setTestStatus => {
   const tests = [
@@ -28,6 +30,8 @@ const runTests = async setTestStatus => {
     { name: 'getAllKeysDemo', fn: getAllKeysDemo },
     { name: 'updatePrivateKeyDemo', fn: updatePrivateKeyDemo },
     { name: 'publicKeyFormatsDemo', fn: publicKeyFormatsDemo },
+    { name: 'deleteAllKeysDemo', fn: deleteAllKeysDemo },
+    { name: 'deleteIndividualKeysDemo', fn: deleteIndividualKeysDemo },
   ];
 
   setTestStatus('Running');

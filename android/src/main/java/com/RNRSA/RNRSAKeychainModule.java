@@ -199,11 +199,29 @@ public class RNRSAKeychainModule extends ReactContextBaseJavaModule {
           @Override
           public void run() {
             try {
-              RSA rsa = new RSA(keyTag);
-              rsa.deletePrivateKey();
-              promise.resolve(1);
-            } catch (NoSuchAlgorithmException e) {
-              promise.reject("Error", e.getMessage());
+              // First try to delete from Android KeyStore (RSA/EC keys)
+              boolean deletedFromKeyStore = false;
+              try {
+                RSA rsa = new RSA(keyTag);
+                rsa.deletePrivateKey();
+                deletedFromKeyStore = true;
+              } catch (Exception e) {
+                // Key not found in KeyStore, continue to check Ed25519
+              }
+              
+              // Also try to delete from Ed25519 SharedPreferences
+              boolean deletedFromEd25519 = false;
+              try {
+                deletedFromEd25519 = Ed25519Helper.deleteKey(keyTag, reactContext);
+              } catch (Exception e) {
+                // Key not found in Ed25519 storage
+              }
+              
+              if (deletedFromKeyStore || deletedFromEd25519) {
+                promise.resolve(1);
+              } else {
+                promise.reject("Error", "Key not found: " + keyTag);
+              }
             } catch (Exception e) {
               promise.reject("Error", e.getMessage());
             }
