@@ -13,23 +13,16 @@ public class Ed25519Helper {
     private static final String PREFS_NAME = "ed25519_keys";
     private static final String LABELS_PREFS_NAME = "ed25519_labels";
     
-    private static SharedPreferences getKeysPrefs(Context context) throws GeneralSecurityException, IOException {
-        MasterKey masterKey = new MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build();
-        
-        try {
-            return EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-        } catch (Exception e) {
-            // Handle corruption by clearing and recreating
-            context.deleteSharedPreferences(PREFS_NAME);
-            return EncryptedSharedPreferences.create(
+    private static SharedPreferences keysPrefsInstance = null;
+    private static SharedPreferences labelsPrefsInstance = null;
+    
+    private static synchronized SharedPreferences getKeysPrefs(Context context) throws GeneralSecurityException, IOException {
+        if (keysPrefsInstance == null) {
+            MasterKey masterKey = new MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+            
+            keysPrefsInstance = EncryptedSharedPreferences.create(
                 context,
                 PREFS_NAME,
                 masterKey,
@@ -37,25 +30,16 @@ public class Ed25519Helper {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
         }
+        return keysPrefsInstance;
     }
     
-    private static SharedPreferences getLabelsPrefs(Context context) throws GeneralSecurityException, IOException {
-        MasterKey masterKey = new MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build();
-        
-        try {
-            return EncryptedSharedPreferences.create(
-                context,
-                LABELS_PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            );
-        } catch (Exception e) {
-            // Handle corruption by clearing and recreating
-            context.deleteSharedPreferences(LABELS_PREFS_NAME);
-            return EncryptedSharedPreferences.create(
+    private static synchronized SharedPreferences getLabelsPrefs(Context context) throws GeneralSecurityException, IOException {
+        if (labelsPrefsInstance == null) {
+            MasterKey masterKey = new MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build();
+            
+            labelsPrefsInstance = EncryptedSharedPreferences.create(
                 context,
                 LABELS_PREFS_NAME,
                 masterKey,
@@ -63,6 +47,7 @@ public class Ed25519Helper {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
         }
+        return labelsPrefsInstance;
     }
     
     public static String generateEd25519KeyPair(String keyTag, String label, Context context) throws Exception {
