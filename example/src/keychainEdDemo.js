@@ -70,17 +70,20 @@ const keychainEdDemo = async () => {
       console.log('getAllKeys key:', allKeysPublicKey);
       return false;
     }
-    
+
     // Verify publicEd25519 property is set correctly for Ed25519 keys
     if (matchingKey.type === 'Ed25519' && !matchingKey.publicEd25519) {
       console.log('Ed25519 key missing publicEd25519 property in getAllKeys');
       return false;
     }
-    if (matchingKey.publicEd25519 && matchingKey.publicEd25519 !== keys.public) {
+    if (
+      matchingKey.publicEd25519 &&
+      matchingKey.publicEd25519 !== keys.public
+    ) {
       console.log('Ed25519 publicEd25519 property mismatch in getAllKeys');
       return false;
     }
-    
+
     console.log(
       'Ed25519 key consistency verified between generate and getAllKeys',
     );

@@ -8,7 +8,7 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "pretty": "prettier --write App.jsx"
+    "pretty": "prettier --write src"
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.81.1",
