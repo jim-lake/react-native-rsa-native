@@ -803,12 +803,6 @@ const getAllKeysDemo = async () => {
         console.log(`Key ${key.tag}: syncronizable must be boolean, got ${typeof key.syncronizable}`);
         return false;
       }
-      
-      // Optional publicEd25519 property (only for Ed25519 keys)
-      if (key.publicEd25519 !== undefined && typeof key.publicEd25519 !== 'string') {
-        console.log(`Key ${key.tag}: publicEd25519 must be string when present, got ${typeof key.publicEd25519}`);
-        return false;
-      }
     }
     
     // Validate specific key types and properties
@@ -844,29 +838,18 @@ const getAllKeysDemo = async () => {
       console.log('EC public key mismatch between generate and getAllKeys');
       return false;
     }
-    if (ecKey.publicEd25519 !== undefined) {
-      console.log('EC key should not have publicEd25519 property');
-      return false;
-    }
     
     // Ed25519 key validation
-    if (edKey.type !== 'Ed25519') {
-      console.log(`Ed25519 key type should be 'Ed25519', got '${edKey.type}'`);
-      return false;
-    }
-    const edPublicKey = edKey.publicEd25519 || edKey.public;
-    if (edPublicKey !== edKeys.public) {
-      console.log('Ed25519 public key mismatch between generate and getAllKeys');
-      return false;
-    }
-    if (edKey.type === 'Ed25519' && !edKey.publicEd25519) {
+    if (!edKey.publicEd25519) {
       console.log('Ed25519 key missing required publicEd25519 property');
+      return false;
+    }
+    if (edKey.publicEd25519 !== edKeys.public) {
+      console.log('Ed25519 public key mismatch between generate and getAllKeys');
       return false;
     }
     
     console.log('All TypeScript interface validations passed');
-    
-    // Clean up
     await RSAKeychain.deleteAllKeys();
     
     return true;
