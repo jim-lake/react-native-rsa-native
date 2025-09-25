@@ -878,19 +878,19 @@ const runTests = async setTestStatus => {
   setTestStatus('Running');
 
   for (const test of tests) {
-    console.log(`Running test: ${test.name}`);
+    console.log(`START TEST: ${test.name}`);
     const result = await test.fn();
     if (!result) {
-      const errorMsg = `Test failed: ${test.name}`;
+      const errorMsg = `TEST FAIL: ${test.name}`;
       console.log(errorMsg);
       setTestStatus(`Failure: ${test.name}`);
-      console.log('ALL_TESTS_COMPLETED');
+      console.log('ALL_TESTS_COMPLETED FAILED');
       return;
     }
-    console.log(`Test passed: ${test.name}`);
+    console.log(`TEST PASS: ${test.name}`);
   }
 
-  console.log('ALL_TESTS_COMPLETED');
+  console.log('ALL_TESTS_COMPLETED PASS');
   setTestStatus('Success');
 };
 
