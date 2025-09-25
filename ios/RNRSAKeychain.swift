@@ -513,6 +513,13 @@ class RNRSAKeychain: NSObject {
     _ keyTag: String, resolver resolve: RCTPromiseResolveBlock,
     rejecter reject: RCTPromiseRejectBlock
   ) {
+    // Get the public key data before deleting the private key
+    var publicKeyData: Data?
+    if let privateKey = Self.getPrivateKey(keyTag: keyTag),
+       let publicKey = SecKeyCopyPublicKey(privateKey) {
+      publicKeyData = Self.getKeyData(key: publicKey)
+    }
+    
     var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
@@ -520,6 +527,19 @@ class RNRSAKeychain: NSObject {
     let status1 = SecItemDelete(query as CFDictionary)
     query[kSecAttrSynchronizable as String] = kCFBooleanTrue
     let status2 = SecItemDelete(query as CFDictionary)
+    
+    // Delete the specific associated public key if we found it
+    if let keyData = publicKeyData {
+      var publicQuery: [String: Any] = [
+        kSecClass as String: kSecClassKey,
+        kSecAttrKeyClass as String: kSecAttrKeyClassPublic,
+        kSecValueData as String: keyData,
+      ]
+      SecItemDelete(publicQuery as CFDictionary)
+      publicQuery[kSecAttrSynchronizable as String] = kCFBooleanTrue
+      SecItemDelete(publicQuery as CFDictionary)
+    }
+    
     resolve(status1 == errSecSuccess || status2 == errSecSuccess)
   }
 
