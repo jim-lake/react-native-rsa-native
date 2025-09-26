@@ -45,31 +45,31 @@ exports.RSAKeychain = {
     deletePrivateKey: (keyTag) => RNRSAKeychain.deletePrivateKey(keyTag),
     updatePrivateKey: (keyTag, label) => RNRSAKeychain.updatePrivateKey(keyTag, label),
     encrypt: async (data, keyTag) => {
-        return await RNRSAKeychain.encrypt64(btoa(data), keyTag);
+        return await RNRSAKeychain.encrypt64(_toBase64(data), keyTag);
     },
     decrypt: async (data, keyTag) => {
-        return atob(await RNRSAKeychain.decrypt64(data, keyTag));
+        return atob(await RNRSAKeychain.decrypt64(_fixupMaybeUint8Array(data), keyTag));
     },
-    encrypt64: (data, keyTag) => RNRSAKeychain.encrypt64(data, keyTag),
-    decrypt64: (data, keyTag) => RNRSAKeychain.decrypt64(data, keyTag),
+    encrypt64: (data, keyTag) => RNRSAKeychain.encrypt64(_fixupMaybeUint8Array(data), keyTag),
+    decrypt64: (data, keyTag) => RNRSAKeychain.decrypt64(_fixupMaybeUint8Array(data), keyTag),
     sign: async (data, keyTag) => {
-        return await RNRSAKeychain.sign64WithAlgorithm(btoa(data), keyTag, 'SHA512withRSA');
+        return await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, 'SHA512withRSA');
     },
-    signWithAlgorithm: async (data, keyTag, signature) => {
-        return await RNRSAKeychain.sign64WithAlgorithm(btoa(data), keyTag, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA');
+    signWithAlgorithm: async (data, keyTag, algorithm) => {
+        return await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA');
     },
-    sign64: (data, keyTag) => RNRSAKeychain.sign64WithAlgorithm(data, keyTag),
+    sign64: (data, keyTag) => RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag),
     /**
      * Sign data with algorithm (64 version - handles base64 data)
      * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @param signature - Signature algorithm (default: SHA512withRSA)
+     * @param algorithm - Signature algorithm (default: SHA512withRSA)
      * @returns Promise<string> - Base64-encoded signature
      */
-    sign64WithAlgorithm: (data, keyTag, signature) => RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag, signature !== null && signature !== void 0 ? signature : 'SHA512withRSA'),
+    sign64WithAlgorithm: (data, keyTag, algorithm) => RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'),
     /**
      * Sign a message with Ed25519 private key from keychain
-     * @param message - Message to sign: base64 string OR Uint8Array (will be base64 encoded automatically)
+     * @param message - Message to sign: raw string OR Uint8Array (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
      * @returns Promise<Uint8Array> - 64-byte Ed25519 signature
      */
@@ -79,17 +79,17 @@ exports.RSAKeychain = {
     },
     /**
      * Verify Ed25519 signature
-     * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)
-     * @param message - Original message: base64 string OR Uint8Array (will be base64 encoded automatically)
+     * @param signature - Signature: string OR Uint8Array (will be base64 encoded automatically)
+     * @param message - Original message: string OR Uint8Array (will be base64 encoded automatically)
      * @param publicKey - Ed25519 public key: base64 string OR Uint8Array (will be base64 encoded automatically)
      * @returns Promise<boolean> - True if signature is valid
      */
     verifyEd: async (signature, message, publicKey) => {
-        return await RNRSAKeychain.verifyEd(_fixupMaybeUint8Array(signature), _toBase64(message), _fixupMaybeUint8Array(publicKey));
+        return await RNRSAKeychain.verifyEd(_toBase64(signature), _toBase64(message), _fixupMaybeUint8Array(publicKey));
     },
-    verify: async (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(signature, btoa(data), keyTag, 'SHA512withRSA'),
-    verifyWithAlgorithm: async (signature, data, keyTag, algorithm) => RNRSAKeychain.verify64WithAlgorithm(signature, btoa(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'),
-    verify64: (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(signature, data, keyTag),
+    verify: async (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(_toBase64(signature), _toBase64(data), keyTag, 'SHA512withRSA'),
+    verifyWithAlgorithm: async (signature, data, keyTag, algorithm) => RNRSAKeychain.verify64WithAlgorithm(_toBase64(signature), _toBase64(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'),
+    verify64: (signature, data, keyTag) => RNRSAKeychain.verify64WithAlgorithm(_fixupMaybeUint8Array(signature), _fixupMaybeUint8Array(data), keyTag),
     /**
      * Verify signature with algorithm (64 version - handles base64 data)
      * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)

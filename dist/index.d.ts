@@ -52,39 +52,39 @@ export declare const RSAKeychain: {
     generateCSRWithEC: (cn: string, keyTag: string, keySize: number) => Promise<PublicKey & CSRKey>;
     deletePrivateKey: (keyTag: string) => Promise<boolean>;
     updatePrivateKey: (keyTag: string, label: string) => Promise<boolean>;
-    encrypt: (data: string, keyTag: string) => Promise<string>;
-    decrypt: (data: string, keyTag: string) => Promise<string>;
-    encrypt64: (data: string, keyTag: string) => Promise<string>;
-    decrypt64: (data: string, keyTag: string) => Promise<string>;
-    sign: (data: string, keyTag: string) => Promise<string>;
-    signWithAlgorithm: (data: string, keyTag: string, signature?: TypeCrypto) => Promise<string>;
-    sign64: (data: string, keyTag: string) => Promise<string>;
+    encrypt: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    decrypt: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    encrypt64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    decrypt64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    sign: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    signWithAlgorithm: (data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<string>;
+    sign64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
     /**
      * Sign data with algorithm (64 version - handles base64 data)
      * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @param signature - Signature algorithm (default: SHA512withRSA)
+     * @param algorithm - Signature algorithm (default: SHA512withRSA)
      * @returns Promise<string> - Base64-encoded signature
      */
-    sign64WithAlgorithm: (data: string | Uint8Array, keyTag: string, signature?: TypeCrypto) => Promise<string>;
+    sign64WithAlgorithm: (data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<string>;
     /**
      * Sign a message with Ed25519 private key from keychain
-     * @param message - Message to sign: base64 string OR Uint8Array (will be base64 encoded automatically)
+     * @param message - Message to sign: raw string OR Uint8Array (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
      * @returns Promise<Uint8Array> - 64-byte Ed25519 signature
      */
     signEd: (message: string | Uint8Array, keyTag: string) => Promise<Uint8Array>;
     /**
      * Verify Ed25519 signature
-     * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)
-     * @param message - Original message: base64 string OR Uint8Array (will be base64 encoded automatically)
+     * @param signature - Signature: string OR Uint8Array (will be base64 encoded automatically)
+     * @param message - Original message: string OR Uint8Array (will be base64 encoded automatically)
      * @param publicKey - Ed25519 public key: base64 string OR Uint8Array (will be base64 encoded automatically)
      * @returns Promise<boolean> - True if signature is valid
      */
     verifyEd: (signature: string | Uint8Array, message: string | Uint8Array, publicKey: string | Uint8Array) => Promise<boolean>;
-    verify: (signature: string, data: string, keyTag: string) => Promise<boolean>;
-    verifyWithAlgorithm: (signature: string, data: string, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
-    verify64: (signature: string, data: string, keyTag: string) => Promise<boolean>;
+    verify: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string) => Promise<boolean>;
+    verifyWithAlgorithm: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
+    verify64: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string) => Promise<boolean>;
     /**
      * Verify signature with algorithm (64 version - handles base64 data)
      * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)
