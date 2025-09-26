@@ -14,11 +14,11 @@ const keychainDemo = async () => {
 
     console.log('all keys:', await RSAKeychain.getAllKeys());
 
-    const encodedMessage = await RSAKeychain.encrypt(secret, RSA_TAG);
+    const encodedMessage = await RSAKeychain.encrypt64(btoa(secret), RSA_TAG);
     console.log('encodedMessage:', encodedMessage);
-    const message = await RSAKeychain.decrypt(encodedMessage, RSA_TAG);
+    const message = atob(await RSAKeychain.decrypt64(encodedMessage, RSA_TAG));
     console.log('message:', message);
-    const signature = await RSAKeychain.sign(secret, RSA_TAG);
+    const signature = await RSAKeychain.sign64(btoa(secret), RSA_TAG);
     console.log('signature', signature);
 
     // Validate signature format - RSA signatures are raw bytes, not ASN.1
@@ -40,15 +40,15 @@ const keychainDemo = async () => {
       return false;
     }
 
-    const valid = await RSAKeychain.verify(signature, secret, RSA_TAG);
+    const valid = await RSAKeychain.verify64(signature, btoa(secret), RSA_TAG);
     console.log('verified', valid);
     if (!valid) {
       return false;
     }
 
-    const invalid = await RSAKeychain.verify(
+    const invalid = await RSAKeychain.verify64(
       signature,
-      'wrong message',
+      btoa('wrong message'),
       RSA_TAG,
     );
     console.log('invalid:', invalid);
