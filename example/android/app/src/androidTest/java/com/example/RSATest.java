@@ -40,8 +40,8 @@ public class RSATest {
     public void testRSAFunctionalitySuccess() throws Exception {
         Log.d(TAG, "Starting RSA functionality test");
         
-        // Wait for tests to complete (10 seconds max)
-        for (int i = 0; i < 10; i++) {
+        // Wait for tests to complete (30 seconds max)
+        for (int i = 0; i < 30; i++) {
             Log.d(TAG, "Checking for results, attempt " + (i + 1));
             
             // Look for Success text
@@ -61,7 +61,7 @@ public class RSATest {
             Thread.sleep(1000);
         }
         
-        Log.d(TAG, "TIMEOUT: No results found within 10 seconds");
-        throw new AssertionError("RSA tests did not complete within 10 seconds");
+        Log.d(TAG, "TIMEOUT: No results found within 30 seconds");
+        throw new AssertionError("RSA tests did not complete within 30 seconds");
     }
 }

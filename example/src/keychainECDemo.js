@@ -29,8 +29,10 @@ function parseDERSignature(derBytes) {
 
 const keychainECDemo = async () => {
   try {
-    console.log('keychainECDemo start - EC Cross-Verification');
+    console.log('keychainECDemo start - EC API Coverage Tests');
 
+    // Test 1: Cross-verification (existing test)
+    console.log('\n=== Test 1: EC Cross-Verification ===');
     const EC_TAG = 'ec_tag1';
     await RSAKeychain.deletePrivateKey(EC_TAG);
     const keys = await RSAKeychain.generateEC(EC_TAG, false, 'Test EC Key');
@@ -98,8 +100,55 @@ const keychainECDemo = async () => {
       }
     }
     console.log('iterations:', iterations, 'success!');
-    await RSAKeychain.deletePrivateKey(EC_TAG);
 
+    // Test 2: Non-64 API methods
+    console.log('\n=== Test 2: Non-64 API Methods ===');
+    const message = 'test message for non-64 APIs';
+    
+    const signature = await RSAKeychain.signWithAlgorithm(message, EC_TAG, 'SHA256withECDSA');
+    console.log('signWithAlgorithm result length:', signature.length);
+    
+    const verifyResult = await RSAKeychain.verifyWithAlgorithm(signature, message, EC_TAG, 'SHA256withECDSA');
+    console.log('verifyWithAlgorithm result:', verifyResult);
+    if (!verifyResult) {
+      console.log('❌ Non-64 API verification failed');
+      return false;
+    }
+    console.log('✅ Non-64 API methods SUCCESS!');
+
+    // Test 3: Different ECDSA algorithms
+    console.log('\n=== Test 3: ECDSA Algorithm Variants ===');
+    const algorithms = ['SHA256withECDSA', 'SHA512withECDSA', 'SHA1withECDSA'];
+    
+    for (const algo of algorithms) {
+      console.log(`Testing ${algo}...`);
+      const testMessage = new TextEncoder().encode(message);
+      const sig = await RSAKeychain.sign64WithAlgorithm(testMessage, EC_TAG, algo);
+      const verify = await RSAKeychain.verify64WithAlgorithm(sig, testMessage, EC_TAG, algo);
+      if (!verify) {
+        console.log(`❌ ${algo} verification failed`);
+        return false;
+      }
+      console.log(`✅ ${algo} SUCCESS!`);
+    }
+
+    // Test 4: Public key retrieval methods
+    console.log('\n=== Test 4: Public Key Retrieval ===');
+    
+    const pubKey = await RSAKeychain.getPublicKey(EC_TAG);
+    console.log('getPublicKey result length:', pubKey.public.length);
+    
+    const pubKeyDER = await RSAKeychain.getPublicKeyDER(EC_TAG);
+    console.log('getPublicKeyDER result length:', pubKeyDER.public.length);
+    
+    if (!pubKey.public || !pubKeyDER.public) {
+      console.log('❌ Public key retrieval failed');
+      return false;
+    }
+    console.log('✅ Public key retrieval SUCCESS!');
+
+    await RSAKeychain.deletePrivateKey(EC_TAG);
+    console.log('\n✅ All EC API tests completed successfully!');
     return true;
   } catch (e) {
     console.log('keychainECDemo failed:', e);
