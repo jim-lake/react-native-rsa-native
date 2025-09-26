@@ -35,59 +35,61 @@ const keychainECDemo = async () => {
     await RSAKeychain.deletePrivateKey(EC_TAG);
     const keys = await RSAKeychain.generateEC(EC_TAG, false, 'Test EC Key');
 
-    const testMessage = 'test message';
-    const messageBytes = new TextEncoder().encode(testMessage);
+    let did_print = false;
+    let iterations = 100;
+    for (let i = 0 ; i < iterations ; i++) {
+      const message = 'test message' + Math.random();
+      const messageBytes = new TextEncoder().encode(message);
 
-    // Get native signature
-    const nativeSignature = await RSAKeychain.sign64WithAlgorithm(
-      messageBytes,
-      EC_TAG,
-      'SHA256withECDSA',
-    );
+      const publicBytes = base64ToUint8Array(keys.public);
 
-    const nativeSignatureBytes = base64ToUint8Array(nativeSignature);
-    const { r, s } = parseDERSignature(nativeSignatureBytes);
+      const nativeSignature = await RSAKeychain.sign64WithAlgorithm(
+        messageBytes,
+        EC_TAG,
+        'SHA256withECDSA',
+      );
+      const nativeSignatureBytes = base64ToUint8Array(nativeSignature);
 
-    // Remove leading zeros and create r||s BE padded signature (EXACT working implementation)
-    const rClean = r[0] === 0 ? r.slice(1) : r;
-    const sClean = s[0] === 0 ? s.slice(1) : s;
-    const signature = new Uint8Array(64);
-    signature.set(rClean, 32 - rClean.length);
-    signature.set(sClean, 64 - sClean.length);
-
-    // Create compressed public key (EXACT working implementation)
-    const publicKeyBytes = base64ToUint8Array(keys.public);
-    const publicKeyForNoble = publicKeyBytes.slice(1); // Remove 0x04 prefix
-    const x = publicKeyForNoble.slice(0, 32);
-    const y = publicKeyForNoble.slice(32, 64);
-    const compressedKey = new Uint8Array(33);
-    compressedKey[0] = y[31] % 2 === 0 ? 0x02 : 0x03;
-    compressedKey.set(x, 1);
-
-    // Cross-verify: noble crypto verifies native signature (EXACT working combination)
-    let crossVerifyResult = false;
-    try {
-      crossVerifyResult = p256.verify(signature, messageBytes, compressedKey);
-      console.log('Cross-verification result:', crossVerifyResult);
-      if (crossVerifyResult) {
-        console.log('✅ EC Cross-verification SUCCESS!');
-      } else {
-        console.log('❌ Cross-verification failed');
+      let crossVerifyResult = false;
+      try {
+        crossVerifyResult = p256.verify(nativeSignatureBytes, messageBytes, publicBytes, { format: 'der', lowS: false });
+      } catch (e) {
+        console.log('Cross-verification error:', e);
+        crossVerifyResult = false;
       }
-    } catch (e) {
-      console.log('Cross-verification error:', e.message);
-      crossVerifyResult = false;
+      const nativeVerifyResult = await RSAKeychain.verify64WithAlgorithm(
+        nativeSignatureBytes,
+        messageBytes,
+        EC_TAG,
+        'SHA256withECDSA',
+      );
+      const failed = !crossVerifyResult || !nativeVerifyResult;
+
+      if (failed  || !did_print) {
+        did_print = true;
+
+        if (failed) {
+          console.log("fail on iteration:", i);
+        }
+
+        console.log("message:", message);
+        console.log("messageBytes:", _uint8ArrayToHex(messageBytes));
+        console.log("public:", keys.public);
+        console.log("publicBytes:", _uint8ArrayToHex(publicBytes));
+        console.log("nativeSignature:", nativeSignature);
+        console.log("nativeSignatureBytes:", _uint8ArrayToHex(nativeSignatureBytes));
+        if (crossVerifyResult) {
+          console.log('✅ EC Cross-verification SUCCESS!');
+        } else {
+          console.log('❌ Cross-verification failed');
+        }
+        console.log('Native verification result:', nativeVerifyResult);
+        if (failed) {
+          return false;
+        }
+      }
     }
-
-    // Native verify (for comparison)
-    const nativeVerifyResult = await RSAKeychain.verify64WithAlgorithm(
-      nativeSignatureBytes,
-      messageBytes,
-      EC_TAG,
-      'SHA256withECDSA',
-    );
-    console.log('Native verification result:', nativeVerifyResult);
-
+    console.log("iterations:", iterations, "success!");
     await RSAKeychain.deletePrivateKey(EC_TAG);
 
     return crossVerifyResult && nativeVerifyResult;
@@ -96,5 +98,8 @@ const keychainECDemo = async () => {
     return false;
   }
 };
+function _uint8ArrayToHex(a) {
+  return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export default keychainECDemo;
