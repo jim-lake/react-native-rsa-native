@@ -56,12 +56,13 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test sign (non-64 version) - signature is already base64, don't encode it again
+    // Test sign (non-64 version) - returns Uint8Array
     const signature2 = await RSAKeychain.sign(secret, RSA_TAG);
     console.log('sign (non-64) signature:', signature2);
-    // Use verify64 with the signature as-is and base64-encoded data
+    // Convert Uint8Array to base64 for verify64
+    const signature2Base64 = btoa(String.fromCharCode(...signature2));
     const valid2 = await RSAKeychain.verify64(
-      signature2,
+      signature2Base64,
       btoa(secret),
       RSA_TAG,
     );
@@ -70,16 +71,17 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test signWithAlgorithm (non-64 version) with SHA256withRSA
+    // Test signWithAlgorithm (non-64 version) with SHA256withRSA - returns Uint8Array
     const signature3 = await RSAKeychain.signWithAlgorithm(
       secret,
       RSA_TAG,
       'SHA256withRSA',
     );
     console.log('signWithAlgorithm (SHA256) signature:', signature3);
-    // Use verify64WithAlgorithm with the signature as-is and base64-encoded data
+    // Convert Uint8Array to base64 for verify64WithAlgorithm
+    const signature3Base64 = btoa(String.fromCharCode(...signature3));
     const valid3 = await RSAKeychain.verify64WithAlgorithm(
-      signature3,
+      signature3Base64,
       btoa(secret),
       RSA_TAG,
       'SHA256withRSA',
@@ -107,22 +109,16 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test verify (non-64 version) - sign returns base64, verify expects raw signature
-    const rawSignature2 = Uint8Array.from(atob(signature2), c =>
-      c.charCodeAt(0),
-    );
-    const valid5 = await RSAKeychain.verify(rawSignature2, secret, RSA_TAG);
+    // Test verify (non-64 version) - sign returns Uint8Array, verify expects raw signature
+    const valid5 = await RSAKeychain.verify(signature2, secret, RSA_TAG);
     console.log('verify (non-64) verified:', valid5);
     if (!valid5) {
       return false;
     }
 
-    // Test verifyWithAlgorithm (non-64 version) - signWithAlgorithm returns base64, verify expects raw signature
-    const rawSignature3 = Uint8Array.from(atob(signature3), c =>
-      c.charCodeAt(0),
-    );
+    // Test verifyWithAlgorithm (non-64 version) - signWithAlgorithm returns Uint8Array, verify expects raw signature
     const valid6 = await RSAKeychain.verifyWithAlgorithm(
-      rawSignature3,
+      signature3,
       secret,
       RSA_TAG,
       'SHA256withRSA',
@@ -132,18 +128,15 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test with SHA1withRSA algorithm
+    // Test with SHA1withRSA algorithm - returns Uint8Array
     const signature7 = await RSAKeychain.signWithAlgorithm(
       secret,
       RSA_TAG,
       'SHA1withRSA',
     );
     console.log('signWithAlgorithm (SHA1) signature:', signature7);
-    const rawSignature7 = Uint8Array.from(atob(signature7), c =>
-      c.charCodeAt(0),
-    );
     const valid7 = await RSAKeychain.verifyWithAlgorithm(
-      rawSignature7,
+      signature7,
       secret,
       RSA_TAG,
       'SHA1withRSA',
@@ -153,18 +146,15 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test with SHA512withRSA algorithm explicitly
+    // Test with SHA512withRSA algorithm explicitly - returns Uint8Array
     const signature8 = await RSAKeychain.signWithAlgorithm(
       secret,
       RSA_TAG,
       'SHA512withRSA',
     );
     console.log('signWithAlgorithm (SHA512) signature:', signature8);
-    const rawSignature8 = Uint8Array.from(atob(signature8), c =>
-      c.charCodeAt(0),
-    );
     const valid8 = await RSAKeychain.verifyWithAlgorithm(
-      rawSignature8,
+      signature8,
       secret,
       RSA_TAG,
       'SHA512withRSA',
@@ -222,9 +212,10 @@ const keychainDemo = async () => {
       return false;
     }
 
-    // Test cross-verification: sign with verify64 (sign uses SHA512 default, verify64 uses SHA512 default)
+    // Test cross-verification: sign with verify64 (sign returns Uint8Array, need to convert to base64)
+    const signature2Base64ForCross = btoa(String.fromCharCode(...signature2));
     const valid12 = await RSAKeychain.verify64(
-      signature2,
+      signature2Base64ForCross,
       btoa(secret),
       RSA_TAG,
     );
