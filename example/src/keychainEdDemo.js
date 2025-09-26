@@ -1,4 +1,5 @@
 import { RSAKeychain } from 'react-native-rsa-native';
+import { ed25519 } from '@noble/curves/ed25519';
 
 function uint8ArrayToBase64(uint8Array) {
   let binary = '';
@@ -89,8 +90,9 @@ const keychainEdDemo = async () => {
     );
 
     // Test Ed25519 signing
-    const message = btoa('Hello Ed25519!'); // Base64 encode the message
-    const signature = await RSAKeychain.signEd(message, ED_TAG);
+    const message = 'Hello Ed25519!'; // Raw string message
+    const messageBytes = new TextEncoder().encode(message);
+    const signature = await RSAKeychain.signEd(messageBytes, ED_TAG);
     console.log(
       'Ed signature: (converted from uint8 to b64):',
       uint8ArrayToBase64(signature),
@@ -116,26 +118,105 @@ const keychainEdDemo = async () => {
       return false;
     }
 
-    // Test Ed25519 verification
+    // Test Ed25519 verification with Uint8Arrays
+    const publicKeyBytes = Uint8Array.from(atob(publicKeyResult.public), c =>
+      c.charCodeAt(0),
+    );
     const isValid = await RSAKeychain.verifyEd(
       signature,
-      message,
-      publicKeyResult.public,
+      messageBytes,
+      publicKeyBytes,
     );
     console.log('Ed signature valid:', isValid);
 
+    // Verify signature with noble crypto using same Uint8Arrays
+    try {
+      const valid = ed25519.verify(signature, messageBytes, publicKeyBytes);
+      console.log('Noble Ed25519 verification with Uint8Arrays:', valid);
+
+      if (valid) {
+        console.log('✅ Ed25519 signature verification SUCCESS!');
+      } else {
+        return false;
+      }
+    } catch (nobleErr) {
+      console.log('Noble crypto verification error:', nobleErr);
+      return false;
+    }
+
     // Test with invalid signature
-    const invalidSignature = btoa('invalid_signature_data');
+    const invalidSignature = new Uint8Array(64); // All zeros
     const isInvalid = await RSAKeychain.verifyEd(
       invalidSignature,
-      message,
-      publicKeyResult.public,
+      messageBytes,
+      publicKeyBytes,
     );
     console.log('Invalid Ed signature valid (should be false):', isInvalid);
 
+    // Create Ed25519 key with noble, sign message, verify with both noble and native
+    console.log('\n--- Noble Ed25519 Key Test ---');
+    // Use a fixed 32-byte private key for testing
+    const noblePrivateKey = new Uint8Array([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+    ]);
+    const noblePublicKey = ed25519.getPublicKey(noblePrivateKey);
+
+    const testMessage = 'Test message for noble key';
+    const testMessageBytes = new TextEncoder().encode(testMessage);
+    const nobleSignature = ed25519.sign(testMessageBytes, noblePrivateKey);
+
+    console.log('Noble signature bytes:', Array.from(nobleSignature));
+    console.log('Noble signature length:', nobleSignature.length);
+    console.log('Noble signature base64:', uint8ArrayToBase64(nobleSignature));
+
+    // Compare with native signature format
+    const nativeSignature = await RSAKeychain.signEd(testMessageBytes, ED_TAG);
+    console.log('Native signature bytes:', Array.from(nativeSignature));
+    console.log('Native signature length:', nativeSignature.length);
+    console.log(
+      'Native signature base64:',
+      uint8ArrayToBase64(nativeSignature),
+    );
+
+    // Test cross-verification with Uint8Arrays
+    console.log('\n--- Cross-Verification Testing ---');
+
+    // Noble signature -> Noble verify
+    const nobleVerify1 = ed25519.verify(
+      nobleSignature,
+      testMessageBytes,
+      noblePublicKey,
+    );
+    console.log('Noble sig + Noble verify:', nobleVerify1);
+
+    // Noble signature -> Native verify
+    const nativeVerify1 = await RSAKeychain.verifyEd(
+      nobleSignature,
+      testMessageBytes,
+      noblePublicKey,
+    );
+    console.log('Noble sig -> Native verify:', nativeVerify1);
+
+    // Native signature -> Noble verify
+    const nobleVerify2 = ed25519.verify(
+      nativeSignature,
+      testMessageBytes,
+      publicKeyBytes,
+    );
+    console.log('Native sig -> Noble verify:', nobleVerify2);
+
+    // Native signature -> Native verify
+    const nativeVerify2 = await RSAKeychain.verifyEd(
+      nativeSignature,
+      testMessageBytes,
+      publicKeyBytes,
+    );
+    console.log('Native sig -> Native verify:', nativeVerify2);
+
     const success = await RSAKeychain.deletePrivateKey(ED_TAG);
     console.log('Ed delete success', success);
-    return success && isValid && !isInvalid;
+    return success && isValid && !isInvalid && nobleVerify1 && nativeVerify1;
   } catch (e) {
     console.log('keychainEdDemo failed:', e);
     return false;
