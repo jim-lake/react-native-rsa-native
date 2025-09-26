@@ -106,6 +106,13 @@ export const RSA = {
 };
 
 export const RSAKeychain = {
+  /**
+   * Generate RSA key pair with default 2048-bit key size
+   * @param keyTag - Key tag identifier
+   * @param synchronizable - Whether key should be synchronizable across devices
+   * @param label - Optional label for the key
+   * @returns Promise<PublicKey> - Generated public key
+   */
   generate: (
     keyTag: string,
     synchronizable?: boolean,
@@ -117,6 +124,14 @@ export const RSAKeychain = {
       synchronizable ?? false,
       label ?? null
     ),
+  /**
+   * Generate RSA key pair with specified key size
+   * @param keyTag - Key tag identifier
+   * @param keySize - Key size in bits
+   * @param synchronizable - Whether key should be synchronizable across devices
+   * @param label - Optional label for the key
+   * @returns Promise<PublicKey> - Generated public key
+   */
   generateKeys: (
     keyTag: string,
     keySize: number,
@@ -129,52 +144,121 @@ export const RSAKeychain = {
       synchronizable ?? false,
       label ?? null
     ),
+  /**
+   * Generate EC (P-256) key pair
+   * @param keyTag - Key tag identifier
+   * @param synchronizable - Whether key should be synchronizable across devices
+   * @param label - Optional label for the key
+   * @returns Promise<PublicKey> - Generated public key
+   */
   generateEC: (
     keyTag: string,
     synchronizable?: boolean,
     label?: string
   ): Promise<PublicKey> =>
     RNRSAKeychain.generateEC(keyTag, synchronizable ?? false, label ?? null),
+  /**
+   * Generate Ed25519 key pair
+   * @param keyTag - Key tag identifier
+   * @param synchronizable - Whether key should be synchronizable across devices
+   * @param label - Optional label for the key
+   * @returns Promise<PublicKey> - Generated public key
+   */
   generateEd: (
     keyTag: string,
     synchronizable?: boolean,
     label?: string
   ): Promise<PublicKey> =>
     RNRSAKeychain.generateEd(keyTag, synchronizable ?? false, label ?? null),
+  /**
+   * Generate Certificate Signing Request (CSR)
+   * @param keyTag - Key tag identifier
+   * @param CN - Common Name for the certificate
+   * @param signature - Signature algorithm
+   * @returns Promise<CSRKey> - Generated CSR
+   */
   generateCSR: (
     keyTag: string,
     CN: string,
     signature?: TypeCrypto
   ): Promise<CSRKey> =>
     RNRSAKeychain.generateCSR(keyTag, CN, signature ?? 'SHA512withRSA'),
+  /**
+   * Generate CSR with EC key
+   * @param cn - Common Name for the certificate
+   * @param keyTag - Key tag identifier
+   * @param keySize - Key size in bits
+   * @returns Promise<PublicKey & CSRKey> - Generated public key and CSR
+   */
   generateCSRWithEC: (
     cn: string,
     keyTag: string,
     keySize: number
   ): Promise<PublicKey & CSRKey> =>
     RNRSAKeychain.generateCSRWithEC(cn, keyTag, keySize),
+  /**
+   * Delete private key from keychain
+   * @param keyTag - Key tag identifier
+   * @returns Promise<boolean> - True if key was deleted successfully
+   */
   deletePrivateKey: (keyTag: string): Promise<boolean> =>
     RNRSAKeychain.deletePrivateKey(keyTag),
+  /**
+   * Update private key label
+   * @param keyTag - Key tag identifier
+   * @param label - New label for the key
+   * @returns Promise<boolean> - True if key was updated successfully
+   */
   updatePrivateKey: (keyTag: string, label: string): Promise<boolean> =>
     RNRSAKeychain.updatePrivateKey(keyTag, label),
+  /**
+   * Encrypt data (non-64 version - handles raw strings/Uint8Arrays)
+   * @param data - Raw string OR Uint8Array to encrypt (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Base64-encoded encrypted data
+   */
   encrypt: async (
     data: string | Uint8Array,
     keyTag: string
   ): Promise<string> => {
     return await RNRSAKeychain.encrypt64(_toBase64(data), keyTag);
   },
+  /**
+   * Decrypt data (non-64 version - returns raw string)
+   * @param data - Raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Decrypted raw string
+   */
   decrypt: async (
     data: string | Uint8Array,
     keyTag: string
   ): Promise<string> => {
     return atob(
-      await RNRSAKeychain.decrypt64(_fixupMaybeUint8Array(data), keyTag)
+      await RNRSAKeychain.decrypt64(_toBase64(data), keyTag)
     );
   },
+  /**
+   * Encrypt data (64 version - handles base64 data)
+   * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Base64-encoded encrypted data
+   */
   encrypt64: (data: string | Uint8Array, keyTag: string): Promise<string> =>
     RNRSAKeychain.encrypt64(_fixupMaybeUint8Array(data), keyTag),
+  /**
+   * Decrypt data (64 version - handles base64 data)
+   * @param data - Base64-encoded encrypted data string OR Uint8Array (passed to native code as-is)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Base64-encoded decrypted data
+   */
   decrypt64: (data: string | Uint8Array, keyTag: string): Promise<string> =>
     RNRSAKeychain.decrypt64(_fixupMaybeUint8Array(data), keyTag),
+  /**
+   * Sign data (non-64 version - handles raw strings/Uint8Arrays)
+   * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Base64-encoded signature
+   */
   sign: async (data: string | Uint8Array, keyTag: string): Promise<string> => {
     return await RNRSAKeychain.sign64WithAlgorithm(
       _toBase64(data),
@@ -182,6 +266,13 @@ export const RSAKeychain = {
       'SHA512withRSA'
     );
   },
+  /**
+   * Sign data with algorithm (non-64 version - handles raw strings/Uint8Arrays)
+   * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @param algorithm - Signature algorithm (default: SHA512withRSA)
+   * @returns Promise<string> - Base64-encoded signature
+   */
   signWithAlgorithm: async (
     data: string | Uint8Array,
     keyTag: string,
@@ -193,11 +284,17 @@ export const RSAKeychain = {
       algorithm ?? 'SHA512withRSA'
     );
   },
+  /**
+   * Sign data (64 version - handles base64 data)
+   * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<string> - Base64-encoded signature
+   */
   sign64: (data: string | Uint8Array, keyTag: string): Promise<string> =>
-    RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag),
+    RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag, 'SHA512withRSA'),
   /**
    * Sign data with algorithm (64 version - handles base64 data)
-   * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
+   * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
    * @param keyTag - Key tag identifier
    * @param algorithm - Signature algorithm (default: SHA512withRSA)
    * @returns Promise<string> - Base64-encoded signature
@@ -227,9 +324,9 @@ export const RSAKeychain = {
   },
   /**
    * Verify Ed25519 signature
-   * @param signature - Signature: string OR Uint8Array (will be base64 encoded automatically)
-   * @param message - Original message: string OR Uint8Array (will be base64 encoded automatically)
-   * @param publicKey - Ed25519 public key: base64 string OR Uint8Array (will be base64 encoded automatically)
+   * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param message - Original message: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param publicKey - Ed25519 public key: raw string OR Uint8Array (will be base64 encoded automatically)
    * @returns Promise<boolean> - True if signature is valid
    */
   verifyEd: async (
@@ -240,9 +337,16 @@ export const RSAKeychain = {
     return await RNRSAKeychain.verifyEd(
       _toBase64(signature),
       _toBase64(message),
-      _fixupMaybeUint8Array(publicKey)
+      _toBase64(publicKey)
     );
   },
+  /**
+   * Verify signature (non-64 version - handles raw strings/Uint8Arrays)
+   * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param data - Original data: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<boolean> - True if signature is valid
+   */
   verify: async (
     signature: string | Uint8Array,
     data: string | Uint8Array,
@@ -254,6 +358,14 @@ export const RSAKeychain = {
       keyTag,
       'SHA512withRSA'
     ),
+  /**
+   * Verify signature with algorithm (non-64 version - handles raw strings/Uint8Arrays)
+   * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param data - Original data: raw string OR Uint8Array (will be base64 encoded automatically)
+   * @param keyTag - Key tag identifier
+   * @param algorithm - Signature algorithm (default: SHA512withRSA)
+   * @returns Promise<boolean> - True if signature is valid
+   */
   verifyWithAlgorithm: async (
     signature: string | Uint8Array,
     data: string | Uint8Array,
@@ -266,6 +378,13 @@ export const RSAKeychain = {
       keyTag,
       algorithm ?? 'SHA512withRSA'
     ),
+  /**
+   * Verify signature (64 version - handles base64 data)
+   * @param signature - Base64-encoded signature string OR Uint8Array (passed to native code as-is)
+   * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+   * @param keyTag - Key tag identifier
+   * @returns Promise<boolean> - True if signature is valid
+   */
   verify64: (
     signature: string | Uint8Array,
     data: string | Uint8Array,
@@ -274,12 +393,13 @@ export const RSAKeychain = {
     RNRSAKeychain.verify64WithAlgorithm(
       _fixupMaybeUint8Array(signature),
       _fixupMaybeUint8Array(data),
-      keyTag
+      keyTag,
+      'SHA512withRSA'
     ),
   /**
    * Verify signature with algorithm (64 version - handles base64 data)
-   * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)
-   * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
+   * @param signature - Base64-encoded signature string OR Uint8Array (passed to native code as-is)
+   * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
    * @param keyTag - Key tag identifier
    * @param algorithm - Signature algorithm (default: SHA512withRSA)
    * @returns Promise<boolean> - True if signature is valid
@@ -296,15 +416,43 @@ export const RSAKeychain = {
       keyTag,
       algorithm ?? 'SHA512withRSA'
     ),
+  /**
+   * Get public key from keychain
+   * @param keyTag - Key tag identifier
+   * @returns Promise<PublicKey> - Public key
+   */
   getPublicKey: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKey(keyTag),
+  /**
+   * Get Ed25519 public key from keychain
+   * @param keyTag - Key tag identifier
+   * @returns Promise<PublicKey> - Ed25519 public key
+   */
   getPublicKeyEd: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKeyEd(keyTag),
+  /**
+   * Get public key in DER format from keychain
+   * @param keyTag - Key tag identifier
+   * @returns Promise<PublicKey> - Public key in DER format
+   */
   getPublicKeyDER: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKeyDER(keyTag),
+  /**
+   * Get RSA public key from keychain
+   * @param keyTag - Key tag identifier
+   * @returns Promise<PublicKey> - RSA public key
+   */
   getPublicKeyRSA: (keyTag: string): Promise<PublicKey> =>
     RNRSAKeychain.getPublicKeyRSA(keyTag),
+  /**
+   * Get all keys from keychain
+   * @returns Promise<KeychainItem[]> - Array of all keychain items
+   */
   getAllKeys: (): Promise<KeychainItem[]> => RNRSAKeychain.getAllKeys(),
+  /**
+   * Delete all keys from keychain
+   * @returns Promise<boolean> - True if all keys were deleted successfully
+   */
   deleteAllKeys: (): Promise<boolean> => RNRSAKeychain.deleteAllKeys(),
   SHA256withRSA: RNRSAKeychain.SHA256withRSA,
   SHA512withRSA: RNRSAKeychain.SHA512withRSA,

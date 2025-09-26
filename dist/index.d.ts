@@ -44,24 +44,121 @@ export declare const RSA: {
     SHA1withECDSA: any;
 };
 export declare const RSAKeychain: {
+    /**
+     * Generate RSA key pair with default 2048-bit key size
+     * @param keyTag - Key tag identifier
+     * @param synchronizable - Whether key should be synchronizable across devices
+     * @param label - Optional label for the key
+     * @returns Promise<PublicKey> - Generated public key
+     */
     generate: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    /**
+     * Generate RSA key pair with specified key size
+     * @param keyTag - Key tag identifier
+     * @param keySize - Key size in bits
+     * @param synchronizable - Whether key should be synchronizable across devices
+     * @param label - Optional label for the key
+     * @returns Promise<PublicKey> - Generated public key
+     */
     generateKeys: (keyTag: string, keySize: number, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    /**
+     * Generate EC (P-256) key pair
+     * @param keyTag - Key tag identifier
+     * @param synchronizable - Whether key should be synchronizable across devices
+     * @param label - Optional label for the key
+     * @returns Promise<PublicKey> - Generated public key
+     */
     generateEC: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    /**
+     * Generate Ed25519 key pair
+     * @param keyTag - Key tag identifier
+     * @param synchronizable - Whether key should be synchronizable across devices
+     * @param label - Optional label for the key
+     * @returns Promise<PublicKey> - Generated public key
+     */
     generateEd: (keyTag: string, synchronizable?: boolean, label?: string) => Promise<PublicKey>;
+    /**
+     * Generate Certificate Signing Request (CSR)
+     * @param keyTag - Key tag identifier
+     * @param CN - Common Name for the certificate
+     * @param signature - Signature algorithm
+     * @returns Promise<CSRKey> - Generated CSR
+     */
     generateCSR: (keyTag: string, CN: string, signature?: TypeCrypto) => Promise<CSRKey>;
+    /**
+     * Generate CSR with EC key
+     * @param cn - Common Name for the certificate
+     * @param keyTag - Key tag identifier
+     * @param keySize - Key size in bits
+     * @returns Promise<PublicKey & CSRKey> - Generated public key and CSR
+     */
     generateCSRWithEC: (cn: string, keyTag: string, keySize: number) => Promise<PublicKey & CSRKey>;
+    /**
+     * Delete private key from keychain
+     * @param keyTag - Key tag identifier
+     * @returns Promise<boolean> - True if key was deleted successfully
+     */
     deletePrivateKey: (keyTag: string) => Promise<boolean>;
+    /**
+     * Update private key label
+     * @param keyTag - Key tag identifier
+     * @param label - New label for the key
+     * @returns Promise<boolean> - True if key was updated successfully
+     */
     updatePrivateKey: (keyTag: string, label: string) => Promise<boolean>;
+    /**
+     * Encrypt data (non-64 version - handles raw strings/Uint8Arrays)
+     * @param data - Raw string OR Uint8Array to encrypt (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Base64-encoded encrypted data
+     */
     encrypt: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    /**
+     * Decrypt data (non-64 version - returns raw string)
+     * @param data - Raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Decrypted raw string
+     */
     decrypt: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    /**
+     * Encrypt data (64 version - handles base64 data)
+     * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Base64-encoded encrypted data
+     */
     encrypt64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    /**
+     * Decrypt data (64 version - handles base64 data)
+     * @param data - Base64-encoded encrypted data string OR Uint8Array (passed to native code as-is)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Base64-encoded decrypted data
+     */
     decrypt64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    /**
+     * Sign data (non-64 version - handles raw strings/Uint8Arrays)
+     * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Base64-encoded signature
+     */
     sign: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    /**
+     * Sign data with algorithm (non-64 version - handles raw strings/Uint8Arrays)
+     * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @param algorithm - Signature algorithm (default: SHA512withRSA)
+     * @returns Promise<string> - Base64-encoded signature
+     */
     signWithAlgorithm: (data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<string>;
+    /**
+     * Sign data (64 version - handles base64 data)
+     * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<string> - Base64-encoded signature
+     */
     sign64: (data: string | Uint8Array, keyTag: string) => Promise<string>;
     /**
      * Sign data with algorithm (64 version - handles base64 data)
-     * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
+     * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
      * @param keyTag - Key tag identifier
      * @param algorithm - Signature algorithm (default: SHA512withRSA)
      * @returns Promise<string> - Base64-encoded signature
@@ -76,29 +173,79 @@ export declare const RSAKeychain: {
     signEd: (message: string | Uint8Array, keyTag: string) => Promise<Uint8Array>;
     /**
      * Verify Ed25519 signature
-     * @param signature - Signature: string OR Uint8Array (will be base64 encoded automatically)
-     * @param message - Original message: string OR Uint8Array (will be base64 encoded automatically)
-     * @param publicKey - Ed25519 public key: base64 string OR Uint8Array (will be base64 encoded automatically)
+     * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param message - Original message: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param publicKey - Ed25519 public key: raw string OR Uint8Array (will be base64 encoded automatically)
      * @returns Promise<boolean> - True if signature is valid
      */
     verifyEd: (signature: string | Uint8Array, message: string | Uint8Array, publicKey: string | Uint8Array) => Promise<boolean>;
+    /**
+     * Verify signature (non-64 version - handles raw strings/Uint8Arrays)
+     * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param data - Original data: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<boolean> - True if signature is valid
+     */
     verify: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string) => Promise<boolean>;
+    /**
+     * Verify signature with algorithm (non-64 version - handles raw strings/Uint8Arrays)
+     * @param signature - Signature: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param data - Original data: raw string OR Uint8Array (will be base64 encoded automatically)
+     * @param keyTag - Key tag identifier
+     * @param algorithm - Signature algorithm (default: SHA512withRSA)
+     * @returns Promise<boolean> - True if signature is valid
+     */
     verifyWithAlgorithm: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
+    /**
+     * Verify signature (64 version - handles base64 data)
+     * @param signature - Base64-encoded signature string OR Uint8Array (passed to native code as-is)
+     * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
+     * @param keyTag - Key tag identifier
+     * @returns Promise<boolean> - True if signature is valid
+     */
     verify64: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string) => Promise<boolean>;
     /**
      * Verify signature with algorithm (64 version - handles base64 data)
-     * @param signature - Signature: base64 string OR Uint8Array (will be base64 encoded automatically)
-     * @param data - Base64-encoded data string OR Uint8Array (will be base64 encoded automatically)
+     * @param signature - Base64-encoded signature string OR Uint8Array (passed to native code as-is)
+     * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)
      * @param keyTag - Key tag identifier
      * @param algorithm - Signature algorithm (default: SHA512withRSA)
      * @returns Promise<boolean> - True if signature is valid
      */
     verify64WithAlgorithm: (signature: string | Uint8Array, data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<boolean>;
+    /**
+     * Get public key from keychain
+     * @param keyTag - Key tag identifier
+     * @returns Promise<PublicKey> - Public key
+     */
     getPublicKey: (keyTag: string) => Promise<PublicKey>;
+    /**
+     * Get Ed25519 public key from keychain
+     * @param keyTag - Key tag identifier
+     * @returns Promise<PublicKey> - Ed25519 public key
+     */
     getPublicKeyEd: (keyTag: string) => Promise<PublicKey>;
+    /**
+     * Get public key in DER format from keychain
+     * @param keyTag - Key tag identifier
+     * @returns Promise<PublicKey> - Public key in DER format
+     */
     getPublicKeyDER: (keyTag: string) => Promise<PublicKey>;
+    /**
+     * Get RSA public key from keychain
+     * @param keyTag - Key tag identifier
+     * @returns Promise<PublicKey> - RSA public key
+     */
     getPublicKeyRSA: (keyTag: string) => Promise<PublicKey>;
+    /**
+     * Get all keys from keychain
+     * @returns Promise<KeychainItem[]> - Array of all keychain items
+     */
     getAllKeys: () => Promise<KeychainItem[]>;
+    /**
+     * Delete all keys from keychain
+     * @returns Promise<boolean> - True if all keys were deleted successfully
+     */
     deleteAllKeys: () => Promise<boolean>;
     SHA256withRSA: any;
     SHA512withRSA: any;
