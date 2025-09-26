@@ -215,13 +215,13 @@ export const RSAKeychain = {
    * Encrypt data (non-64 version - handles raw strings/Uint8Arrays)
    * @param data - Raw string OR Uint8Array to encrypt (will be base64 encoded automatically)
    * @param keyTag - Key tag identifier
-   * @returns Promise<string> - Base64-encoded encrypted data
+   * @returns Promise<Uint8Array> - encrypted data
    */
   encrypt: async (
     data: string | Uint8Array,
     keyTag: string
-  ): Promise<string> => {
-    return await RNRSAKeychain.encrypt64(_toBase64(data), keyTag);
+  ): Promise<Uint8Array> => {
+    return _fromBase64(await RNRSAKeychain.encrypt64(_toBase64(data), keyTag));
   },
   /**
    * Decrypt data (non-64 version - returns raw string)
@@ -233,9 +233,7 @@ export const RSAKeychain = {
     data: string | Uint8Array,
     keyTag: string
   ): Promise<string> => {
-    return atob(
-      await RNRSAKeychain.decrypt64(_toBase64(data), keyTag)
-    );
+    return atob(await RNRSAKeychain.decrypt64(_toBase64(data), keyTag));
   },
   /**
    * Encrypt data (64 version - handles base64 data)
@@ -257,13 +255,18 @@ export const RSAKeychain = {
    * Sign data (non-64 version - handles raw strings/Uint8Arrays)
    * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
    * @param keyTag - Key tag identifier
-   * @returns Promise<string> - Base64-encoded signature
+   * @returns Promise<Uint8Array> - signature
    */
-  sign: async (data: string | Uint8Array, keyTag: string): Promise<string> => {
-    return await RNRSAKeychain.sign64WithAlgorithm(
-      _toBase64(data),
-      keyTag,
-      'SHA512withRSA'
+  sign: async (
+    data: string | Uint8Array,
+    keyTag: string
+  ): Promise<Uint8Array> => {
+    return _fromBase64(
+      await RNRSAKeychain.sign64WithAlgorithm(
+        _toBase64(data),
+        keyTag,
+        'SHA512withRSA'
+      )
     );
   },
   /**
@@ -271,17 +274,19 @@ export const RSAKeychain = {
    * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
    * @param keyTag - Key tag identifier
    * @param algorithm - Signature algorithm (default: SHA512withRSA)
-   * @returns Promise<string> - Base64-encoded signature
+   * @returns Promise<Uint8Array> - signature
    */
   signWithAlgorithm: async (
     data: string | Uint8Array,
     keyTag: string,
     algorithm?: TypeCrypto
-  ): Promise<string> => {
-    return await RNRSAKeychain.sign64WithAlgorithm(
-      _toBase64(data),
-      keyTag,
-      algorithm ?? 'SHA512withRSA'
+  ): Promise<Uint8Array> => {
+    return _fromBase64(
+      await RNRSAKeychain.sign64WithAlgorithm(
+        _toBase64(data),
+        keyTag,
+        algorithm ?? 'SHA512withRSA'
+      )
     );
   },
   /**
@@ -291,7 +296,11 @@ export const RSAKeychain = {
    * @returns Promise<string> - Base64-encoded signature
    */
   sign64: (data: string | Uint8Array, keyTag: string): Promise<string> =>
-    RNRSAKeychain.sign64WithAlgorithm(_fixupMaybeUint8Array(data), keyTag, 'SHA512withRSA'),
+    RNRSAKeychain.sign64WithAlgorithm(
+      _fixupMaybeUint8Array(data),
+      keyTag,
+      'SHA512withRSA'
+    ),
   /**
    * Sign data with algorithm (64 version - handles base64 data)
    * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)

@@ -110,9 +110,9 @@ export declare const RSAKeychain: {
      * Encrypt data (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to encrypt (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @returns Promise<string> - Base64-encoded encrypted data
+     * @returns Promise<Uint8Array> - encrypted data
      */
-    encrypt: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    encrypt: (data: string | Uint8Array, keyTag: string) => Promise<Uint8Array>;
     /**
      * Decrypt data (non-64 version - returns raw string)
      * @param data - Raw string OR Uint8Array (will be base64 encoded automatically)
@@ -138,17 +138,17 @@ export declare const RSAKeychain: {
      * Sign data (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @returns Promise<string> - Base64-encoded signature
+     * @returns Promise<Uint8Array> - signature
      */
-    sign: (data: string | Uint8Array, keyTag: string) => Promise<string>;
+    sign: (data: string | Uint8Array, keyTag: string) => Promise<Uint8Array>;
     /**
      * Sign data with algorithm (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
      * @param algorithm - Signature algorithm (default: SHA512withRSA)
-     * @returns Promise<string> - Base64-encoded signature
+     * @returns Promise<Uint8Array> - signature
      */
-    signWithAlgorithm: (data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<string>;
+    signWithAlgorithm: (data: string | Uint8Array, keyTag: string, algorithm?: TypeCrypto) => Promise<Uint8Array>;
     /**
      * Sign data (64 version - handles base64 data)
      * @param data - Base64-encoded data string OR Uint8Array (passed to native code as-is)

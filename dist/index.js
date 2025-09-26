@@ -102,10 +102,10 @@ exports.RSAKeychain = {
      * Encrypt data (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to encrypt (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @returns Promise<string> - Base64-encoded encrypted data
+     * @returns Promise<Uint8Array> - encrypted data
      */
     encrypt: async (data, keyTag) => {
-        return await RNRSAKeychain.encrypt64(_toBase64(data), keyTag);
+        return _fromBase64(await RNRSAKeychain.encrypt64(_toBase64(data), keyTag));
     },
     /**
      * Decrypt data (non-64 version - returns raw string)
@@ -134,20 +134,20 @@ exports.RSAKeychain = {
      * Sign data (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
-     * @returns Promise<string> - Base64-encoded signature
+     * @returns Promise<Uint8Array> - signature
      */
     sign: async (data, keyTag) => {
-        return await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, 'SHA512withRSA');
+        return _fromBase64(await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, 'SHA512withRSA'));
     },
     /**
      * Sign data with algorithm (non-64 version - handles raw strings/Uint8Arrays)
      * @param data - Raw string OR Uint8Array to sign (will be base64 encoded automatically)
      * @param keyTag - Key tag identifier
      * @param algorithm - Signature algorithm (default: SHA512withRSA)
-     * @returns Promise<string> - Base64-encoded signature
+     * @returns Promise<Uint8Array> - signature
      */
     signWithAlgorithm: async (data, keyTag, algorithm) => {
-        return await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA');
+        return _fromBase64(await RNRSAKeychain.sign64WithAlgorithm(_toBase64(data), keyTag, algorithm !== null && algorithm !== void 0 ? algorithm : 'SHA512withRSA'));
     },
     /**
      * Sign data (64 version - handles base64 data)
